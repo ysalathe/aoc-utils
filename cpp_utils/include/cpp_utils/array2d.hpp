@@ -9,10 +9,8 @@
 namespace cpp_utils {
 
   template <typename T>
-  struct Array2D {
-    int n, m;
-    std::vector<std::vector<T>> data;
-
+  class Array2D {
+   public:
     Array2D(int n, int m) : n(n), m(m), data(n, std::vector<T>(m)) {}
     Array2D(int n, int m, std::vector<std::vector<T>> const& data) : n(n), m(m), data(data) {}
     Array2D(int n, int m, T const& value) : n(n), m(m), data(n, std::vector<T>(m, value)) {}
@@ -24,28 +22,33 @@ namespace cpp_utils {
       }
     }
 
+    int num_rows() const { return n; };
+    int num_columns() const { return m; };
+
     bool valid_index(int i, int j) const { return i >= 0 && i < n && j >= 0 && j < m; }
 
-    std::optional<T> operator()(int i, int j) {
-      return valid_index(i, j) ? std::optional<T>{data[i][j]} : std::nullopt;
-    }
+    T& operator()(int i, int j) { return data[i][j]; }
 
-    const std::optional<T> operator()(int i, int j) const {
-      return valid_index(i, j) ? std::optional<T>{data[i][j]} : std::nullopt;
-    }
+    const T& operator()(int i, int j) const { return data[i][j]; }
 
     enum class Direction { Horizontal, Vertical, Diagonal, MinorDiagonal };
 
-    constexpr static Direction default_direction = Direction::Horizontal;
+    static constexpr Direction default_direction = Direction::Horizontal;
 
-    template <Direction dir = default_direction>
-    struct Iterator {
-      Array2D const* array;
-      int i, j;
+    class Iterator {
+     public:
+      using iterator_category = std::input_iterator_tag;
+      using value_type = T;
+      using difference_type = std::ptrdiff_t;
+      using pointer = T*;
+      using reference = T&;
 
-      Iterator(Array2D const* array, int i, int j) : array(array), i(i), j(j) {}
+      Iterator(Array2D const* array, int i, int j, Direction dir = default_direction)
+          : array(array), i(i), j(j), dir(dir) {}
 
-      std::optional<T> operator*() { return (*array)(i, j); }
+      Direction dir;
+
+      T operator*() { return (*array)(i, j); }
 
       Iterator& operator++() {
         switch (dir) {
@@ -64,6 +67,10 @@ namespace cpp_utils {
             --j;
             break;
         }
+        if (!array->valid_index(i, j)) {
+          i = array->num_rows();
+          j = array->num_columns();
+        }
         return *this;
       }
 
@@ -76,32 +83,39 @@ namespace cpp_utils {
 
       bool operator!=(Iterator const& other) const { return i != other.i || j != other.j; }
       bool operator==(Iterator const& other) const { return i == other.i && j == other.j; }
+
+     private:
+      Array2D const* array;
+      int i, j;
     };
 
-    template <Direction dir = default_direction>
-    Iterator<dir> upper_left_corner() const {
-      return Iterator<dir>(this, 0, 0);
+    Iterator begin_upper_left_corner(Direction dir = default_direction) const {
+      return Iterator(this, 0, 0, dir);
     }
 
-    template <Direction dir = default_direction>
-    Iterator<dir> upper_right_corner() const {
-      return Iterator<dir>(this, 0, m - 1);
+    Iterator begin_upper_right_corner(Direction dir = default_direction) const {
+      return Iterator(this, 0, m - 1, dir);
     }
 
-    template <Direction dir = default_direction>
-    Iterator<dir> lower_left_corner() const {
-      return Iterator<dir>(this, n - 1, 0);
+    Iterator begin_lower_left_corner(Direction dir = default_direction) const {
+      return Iterator(this, n - 1, 0, dir);
     }
 
-    template <Direction dir = default_direction>
-    Iterator<dir> lower_right_corner() const {
-      return Iterator<dir>(this, n - 1, m - 1);
+    Iterator begin_lower_right_corner(Direction dir = default_direction) const {
+      return Iterator(this, n - 1, m - 1, dir);
     }
 
-    template <Direction dir = default_direction>
-    Iterator<dir> begin() const {
-      return upper_left_corner<dir>();
+    Iterator begin(Direction dir = default_direction) const { return begin_upper_left_corner(dir); }
+
+    Iterator end() const { return Iterator(this, n, m); }
+
+    Iterator iterator_from(int i, int j, Direction dir = default_direction) const {
+      return Iterator(this, i, j, dir);
     }
+
+   private:
+    int n, m;
+    std::vector<std::vector<T>> data;
   };
 
 }  // namespace cpp_utils
@@ -112,10 +126,11 @@ class fmt::formatter<cpp_utils::Array2D<T>> {
   constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
   template <typename Context>
   constexpr auto format(cpp_utils::Array2D<T> const& array, Context& ctx) const {
-    auto result = fmt::format_to(ctx.out(), "Array2D({}x{})\n", array.n, array.m);
-    for (int i = 0; i < array.n; ++i) {
-      for (int j = 0; j < array.m; ++j) {
-        result = fmt::format_to(ctx.out(), "{} ", array(i, j).value_or(0));
+    auto result =
+        fmt::format_to(ctx.out(), "Array2D({}x{})\n", array.num_rows(), array.num_columns());
+    for (int i = 0; i < array.num_rows(); ++i) {
+      for (int j = 0; j < array.num_columns(); ++j) {
+        result = fmt::format_to(ctx.out(), "{} ", array(i, j));
       }
       result = fmt::format_to(ctx.out(), "\n");
     }

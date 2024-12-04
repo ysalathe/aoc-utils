@@ -51,14 +51,14 @@ namespace {
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.upper_left_corner();
+    auto it = array.begin_upper_left_corner();
     EXPECT_EQ(*it, 1);
     ++it;
     EXPECT_EQ(*it, 2);
     ++it;
     EXPECT_EQ(*it, 3);
     ++it;
-    EXPECT_EQ(*it, std::nullopt);
+    EXPECT_EQ(it, array.end());
   }
 
   TEST(Array2DTest, IteratesVertical) {
@@ -66,12 +66,12 @@ namespace {
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.upper_left_corner<cpp_utils::Array2D<int>::Direction::Vertical>();
+    auto it = array.begin_upper_left_corner(cpp_utils::Array2D<int>::Direction::Vertical);
     EXPECT_EQ(*it, 1);
     ++it;
     EXPECT_EQ(*it, 4);
     ++it;
-    EXPECT_EQ(*it, std::nullopt);
+    EXPECT_EQ(it, array.end());
   }
 
   TEST(Array2DTest, IteratesDiagonal) {
@@ -79,12 +79,12 @@ namespace {
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.upper_left_corner<cpp_utils::Array2D<int>::Direction::Diagonal>();
+    auto it = array.begin_upper_left_corner(cpp_utils::Array2D<int>::Direction::Diagonal);
     EXPECT_EQ(*it, 1);
     ++it;
     EXPECT_EQ(*it, 5);
     ++it;
-    EXPECT_EQ(*it, std::nullopt);
+    EXPECT_EQ(it, array.end());
   }
 
   TEST(Array2DTest, IteratesMinorDiagonal) {
@@ -92,12 +92,25 @@ namespace {
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.upper_right_corner<cpp_utils::Array2D<int>::Direction::MinorDiagonal>();
+    auto it = array.begin_upper_right_corner(cpp_utils::Array2D<int>::Direction::MinorDiagonal);
     EXPECT_EQ(*it, 3);
     ++it;
     EXPECT_EQ(*it, 5);
     ++it;
-    EXPECT_EQ(*it, std::nullopt);
+    EXPECT_EQ(it, array.end());
+  }
+
+  TEST(Array2DTest, IteratorFrom) {
+    cpp_utils::Array2D<int> const array(2, 3, {1, 2, 3, 4, 5, 6});
+    // The array looks like this:
+    // 1 2 3
+    // 4 5 6
+    auto it = array.iterator_from(1, 1);
+    EXPECT_EQ(*it, 5);
+    ++it;
+    EXPECT_EQ(*it, 6);
+    ++it;
+    EXPECT_EQ(it, array.end());
   }
 
   TEST(Array2DTest, PrintWithFmt) {
