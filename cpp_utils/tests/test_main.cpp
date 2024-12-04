@@ -1,5 +1,6 @@
 // main.cpp
 #include "cpp_utils/array2d.hpp"
+#include "fmt/format.h"
 
 #include <gtest/gtest.h>
 
@@ -97,6 +98,14 @@ namespace {
     EXPECT_EQ(*it, 5);
     ++it;
     EXPECT_EQ(*it, std::nullopt);
+  }
+
+  TEST(Array2DTest, PrintWithFmt) {
+    cpp_utils::Array2D<int> const array(2, 3, {1, 2, 3, 4, 5, 6});
+    // The array looks like this:
+    // 1 2 3
+    // 4 5 6
+    fmt::print("{}", array);
   }
 
 }  // namespace

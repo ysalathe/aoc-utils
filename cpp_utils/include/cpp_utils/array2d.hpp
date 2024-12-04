@@ -1,5 +1,8 @@
 #pragma once
 
+#include <fmt/core.h>
+#include <fmt/format.h>
+
 #include <optional>
 #include <vector>
 
@@ -102,3 +105,20 @@ namespace cpp_utils {
   };
 
 }  // namespace cpp_utils
+
+template <typename T>
+class fmt::formatter<cpp_utils::Array2D<T>> {
+ public:
+  constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
+  template <typename Context>
+  constexpr auto format(cpp_utils::Array2D<T> const& array, Context& ctx) const {
+    auto result = fmt::format_to(ctx.out(), "Array2D({}x{})\n", array.n, array.m);
+    for (int i = 0; i < array.n; ++i) {
+      for (int j = 0; j < array.m; ++j) {
+        result = fmt::format_to(ctx.out(), "{} ", array(i, j).value_or(0));
+      }
+      result = fmt::format_to(ctx.out(), "\n");
+    }
+    return result;
+  }
+};
