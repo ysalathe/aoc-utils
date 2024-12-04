@@ -5,6 +5,9 @@ project(cpp_utils)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Enable testing
+enable_testing()
+
 # Add the library
 add_library(${PROJECT_NAME} INTERFACE)
 
@@ -12,7 +15,5 @@ add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(${PROJECT_NAME} INTERFACE include)
 
 # Add the main executable
-add_executable(main_exec tests/main.cpp)
+add_subdirectory(tests)
 
-# Link the library to the executable
-target_link_libraries(main_exec ${PROJECT_NAME})
