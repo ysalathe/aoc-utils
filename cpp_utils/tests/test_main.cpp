@@ -5,8 +5,22 @@
 
 namespace {
 
-  TEST(Array2DTest, Handles2DArrayWithInitializerList) {
-    cpp_utils::Array2D<int> const array(2, 3, {1, 2, 3, 4, 5, 6});
+  TEST(Array2DTest, Handles2DArrayWithVector) {
+    cpp_utils::Array2D<int> const array(2, 3, std::vector<int>{1, 2, 3, 4, 5, 6});
+    // The array looks like this:
+    // 1 2 3
+    // 4 5 6
+    EXPECT_EQ(array(0, 0), 1);
+    EXPECT_EQ(array(0, 1), 2);
+    EXPECT_EQ(array(0, 2), 3);
+    EXPECT_EQ(array(1, 0), 4);
+    EXPECT_EQ(array(1, 1), 5);
+    EXPECT_EQ(array(1, 2), 6);
+  }
+
+  TEST(Array2DTest, Handles2DArrayWithNestedVector) {
+    cpp_utils::Array2D<int> const array(
+        2, 3, std::vector<std::vector<int>>{std::vector<int>{1, 2, 3}, std::vector<int>{4, 5, 6}});
     // The array looks like this:
     // 1 2 3
     // 4 5 6

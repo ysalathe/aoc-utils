@@ -11,7 +11,7 @@ namespace cpp_utils {
     std::vector<std::vector<T>> data;
 
     Array2D(int n, int m) : n(n), m(m), data(n, std::vector<T>(m)) {}
-
+    Array2D(int n, int m, std::vector<std::vector<T>> const& data) : n(n), m(m), data(data) {}
     Array2D(int n, int m, T const& value) : n(n), m(m), data(n, std::vector<T>(m, value)) {}
     Array2D(int n, int m, std::vector<T> const& values) : n(n), m(m), data(n, std::vector<T>(m)) {
       for (int i = 0; i < n; ++i) {
