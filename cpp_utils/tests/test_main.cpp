@@ -1,13 +1,14 @@
 // main.cpp
 #include "cpp_utils/array2d.hpp"
-#include "fmt/format.h"
 
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 namespace {
 
   TEST(Array2DTest, Handles2DArrayWithVector) {
-    cpp_utils::Array2D<int> const array(2, 3, std::vector<int>{1, 2, 3, 4, 5, 6});
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    cpp_utils::Array2D<int> const array(2, 3, vec);
     // The array looks like this:
     // 1 2 3
     // 4 5 6
@@ -21,7 +22,7 @@ namespace {
 
   TEST(Array2DTest, Handles2DArrayWithNestedVector) {
     cpp_utils::Array2D<int> const array(
-        2, 3, std::vector<std::vector<int>>{std::vector<int>{1, 2, 3}, std::vector<int>{4, 5, 6}});
+        std::vector<std::vector<int>>{std::vector<int>{1, 2, 3}, std::vector<int>{4, 5, 6}});
     // The array looks like this:
     // 1 2 3
     // 4 5 6
@@ -47,7 +48,8 @@ namespace {
   }
 
   TEST(Array2DTest, IteratesHorizontal) {
-    cpp_utils::Array2D<int> const array(2, 3, {1, 2, 3, 4, 5, 6});
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    cpp_utils::Array2D<int> const array(2, 3, vec);
     // The array looks like this:
     // 1 2 3
     // 4 5 6
@@ -62,11 +64,12 @@ namespace {
   }
 
   TEST(Array2DTest, IteratesVertical) {
-    cpp_utils::Array2D<int> const array(2, 3, {1, 2, 3, 4, 5, 6});
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    cpp_utils::Array2D<int> const array(2, 3, vec);
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.begin_upper_left_corner(cpp_utils::Array2D<int>::Direction::Vertical);
+    auto it = array.begin_upper_left_corner(cpp_utils::Direction::Vertical);
     EXPECT_EQ(*it, 1);
     ++it;
     EXPECT_EQ(*it, 4);
@@ -75,11 +78,12 @@ namespace {
   }
 
   TEST(Array2DTest, IteratesDiagonal) {
-    cpp_utils::Array2D<int> const array(2, 3, {1, 2, 3, 4, 5, 6});
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    cpp_utils::Array2D<int> const array(2, 3, vec);
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.begin_upper_left_corner(cpp_utils::Array2D<int>::Direction::Diagonal);
+    auto it = array.begin_upper_left_corner(cpp_utils::Direction::Diagonal);
     EXPECT_EQ(*it, 1);
     ++it;
     EXPECT_EQ(*it, 5);
@@ -88,11 +92,12 @@ namespace {
   }
 
   TEST(Array2DTest, IteratesMinorDiagonal) {
-    cpp_utils::Array2D<int> const array(2, 3, {1, 2, 3, 4, 5, 6});
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    cpp_utils::Array2D<int> const array(2, 3, vec);
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.begin_upper_right_corner(cpp_utils::Array2D<int>::Direction::MinorDiagonal);
+    auto it = array.begin_upper_right_corner(cpp_utils::Direction::MinorDiagonal);
     EXPECT_EQ(*it, 3);
     ++it;
     EXPECT_EQ(*it, 5);
@@ -101,7 +106,8 @@ namespace {
   }
 
   TEST(Array2DTest, IteratorFrom) {
-    cpp_utils::Array2D<int> const array(2, 3, {1, 2, 3, 4, 5, 6});
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    cpp_utils::Array2D<int> const array(2, 3, vec);
     // The array looks like this:
     // 1 2 3
     // 4 5 6
@@ -113,8 +119,61 @@ namespace {
     EXPECT_EQ(it, array.end());
   }
 
+  TEST(Array2DTest, IteratesHorizontalFlat) {
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    cpp_utils::Array2D<int> const array(2, 3, vec);
+    // The array looks like this:
+    // 1 2 3
+    // 4 5 6
+    auto it = array.begin_upper_left_corner(cpp_utils::Direction::Horizontal, true);
+    EXPECT_EQ(*it, 1);
+    ++it;
+    EXPECT_EQ(*it, 2);
+    ++it;
+    EXPECT_EQ(*it, 3);
+    ++it;
+    EXPECT_EQ(*it, 4);
+    ++it;
+    EXPECT_EQ(*it, 5);
+    ++it;
+    EXPECT_EQ(*it, 6);
+    ++it;
+    EXPECT_EQ(it, array.end());
+  }
+
+  TEST(Array2DTest, IteratesVerticalFlat) {
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    cpp_utils::Array2D<int> const array(2, 3, vec);
+    // The array looks like this:
+    // 1 2 3
+    // 4 5 6
+    auto it = array.begin_upper_left_corner(cpp_utils::Direction::Vertical, true);
+    EXPECT_EQ(*it, 1);
+    ++it;
+    EXPECT_EQ(*it, 4);
+    ++it;
+    EXPECT_EQ(*it, 2);
+    ++it;
+    EXPECT_EQ(*it, 5);
+    ++it;
+    EXPECT_EQ(*it, 3);
+    ++it;
+    EXPECT_EQ(*it, 6);
+    ++it;
+    EXPECT_EQ(it, array.end());
+  }
+
+  TEST(Array2DTest, MutableIterator) {
+    auto vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    cpp_utils::Array2D<int> array(2, 3, vec);
+    auto it = array.begin_upper_left_corner();
+    *it = 10;
+    EXPECT_EQ(array(0, 0), 10);
+  }
+
   TEST(Array2DTest, PrintWithFmt) {
-    cpp_utils::Array2D<int> const array(2, 3, {1, 2, 3, 4, 5, 6});
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    cpp_utils::Array2D<int> const array(2, 3, vec);
     // The array looks like this:
     // 1 2 3
     // 4 5 6

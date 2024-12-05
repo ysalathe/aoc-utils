@@ -1,10 +1,6 @@
 # tests/CMakeLists.txt
 enable_testing()
 
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-
 # Add the Google Test library
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
