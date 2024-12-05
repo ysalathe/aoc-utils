@@ -171,13 +171,14 @@ namespace {
     EXPECT_EQ(array(0, 0), 10);
   }
 
-  TEST(Array2DTest, PrintWithFmt) {
+  TEST(Array2DTest, Format) {
     auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
     cpp_utils::Array2D<int> const array(2, 3, vec);
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    fmt::print("{}", array);
+    std::string expected = "Array2D(2x3)\n1 2 3\n4 5 6\n";
+    EXPECT_EQ(fmt::format("{}", array), expected);
   }
 
 }  // namespace
