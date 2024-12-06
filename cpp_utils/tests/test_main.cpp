@@ -47,7 +47,7 @@ namespace {
     EXPECT_EQ(array(1, 2), 0);
   }
 
-  TEST(Array2DTest, IteratesHorizontal) {
+  TEST(Array2DTest, IteratesEast) {
     auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
     cpp_utils::Array2D<int> const array(2, 3, vec);
     // The array looks like this:
@@ -63,13 +63,27 @@ namespace {
     EXPECT_EQ(it, array.end());
   }
 
-  TEST(Array2DTest, IteratesVertical) {
+  TEST(Array2DTest, IteratesSouthEast) {
     auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
     cpp_utils::Array2D<int> const array(2, 3, vec);
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.begin_upper_left_corner(cpp_utils::Direction::Vertical);
+    auto it = array.begin_upper_left_corner(cpp_utils::Direction::SouthEast);
+    EXPECT_EQ(*it, 1);
+    ++it;
+    EXPECT_EQ(*it, 5);
+    ++it;
+    EXPECT_EQ(it, array.end());
+  }
+
+  TEST(Array2DTest, IteratesSouth) {
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    cpp_utils::Array2D<int> const array(2, 3, vec);
+    // The array looks like this:
+    // 1 2 3
+    // 4 5 6
+    auto it = array.begin_upper_left_corner(cpp_utils::Direction::South);
     EXPECT_EQ(*it, 1);
     ++it;
     EXPECT_EQ(*it, 4);
@@ -77,30 +91,74 @@ namespace {
     EXPECT_EQ(it, array.end());
   }
 
-  TEST(Array2DTest, IteratesDiagonal) {
+  TEST(Array2DTest, IteratesSouthWest) {
     auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
     cpp_utils::Array2D<int> const array(2, 3, vec);
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.begin_upper_left_corner(cpp_utils::Direction::Diagonal);
-    EXPECT_EQ(*it, 1);
+    auto it = array.begin_upper_right_corner(cpp_utils::Direction::SouthWest);
+    EXPECT_EQ(*it, 3);
     ++it;
     EXPECT_EQ(*it, 5);
     ++it;
     EXPECT_EQ(it, array.end());
   }
 
-  TEST(Array2DTest, IteratesMinorDiagonal) {
+  TEST(Array2DTest, IteratesWest) {
     auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
     cpp_utils::Array2D<int> const array(2, 3, vec);
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.begin_upper_right_corner(cpp_utils::Direction::MinorDiagonal);
+    auto it = array.begin_upper_right_corner(cpp_utils::Direction::West);
     EXPECT_EQ(*it, 3);
     ++it;
-    EXPECT_EQ(*it, 5);
+    EXPECT_EQ(*it, 2);
+    ++it;
+    EXPECT_EQ(*it, 1);
+    ++it;
+    EXPECT_EQ(it, array.end());
+  }
+
+  TEST(Array2DTest, IteratesNorthWest) {
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    cpp_utils::Array2D<int> const array(2, 3, vec);
+    // The array looks like this:
+    // 1 2 3
+    // 4 5 6
+    auto it = array.begin_lower_right_corner(cpp_utils::Direction::NorthWest);
+    EXPECT_EQ(*it, 6);
+    ++it;
+    EXPECT_EQ(*it, 2);
+    ++it;
+    EXPECT_EQ(it, array.end());
+  }
+
+  TEST(Array2DTest, IteratesNorth) {
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    cpp_utils::Array2D<int> const array(2, 3, vec);
+    // The array looks like this:
+    // 1 2 3
+    // 4 5 6
+    auto it = array.begin_lower_left_corner(cpp_utils::Direction::North);
+    EXPECT_EQ(*it, 4);
+    ++it;
+    EXPECT_EQ(*it, 1);
+    ++it;
+    EXPECT_EQ(it, array.end());
+  }
+
+  TEST(Array2DTest, IteratesNorthEast) {
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    cpp_utils::Array2D<int> const array(2, 3, vec);
+    // The array looks like this:
+    // 1 2 3
+    // 4 5 6
+    auto it = array.begin_lower_left_corner(cpp_utils::Direction::NorthEast);
+    EXPECT_EQ(*it, 4);
+    ++it;
+    EXPECT_EQ(*it, 2);
     ++it;
     EXPECT_EQ(it, array.end());
   }
@@ -119,13 +177,13 @@ namespace {
     EXPECT_EQ(it, array.end());
   }
 
-  TEST(Array2DTest, IteratesHorizontalFlat) {
+  TEST(Array2DTest, IteratesEastFlat) {
     auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
     cpp_utils::Array2D<int> const array(2, 3, vec);
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.begin_upper_left_corner(cpp_utils::Direction::Horizontal, true);
+    auto it = array.begin_upper_left_corner(cpp_utils::Direction::East, true);
     EXPECT_EQ(*it, 1);
     ++it;
     EXPECT_EQ(*it, 2);
@@ -141,13 +199,13 @@ namespace {
     EXPECT_EQ(it, array.end());
   }
 
-  TEST(Array2DTest, IteratesVerticalFlat) {
+  TEST(Array2DTest, IteratesSouthFlat) {
     auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
     cpp_utils::Array2D<int> const array(2, 3, vec);
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.begin_upper_left_corner(cpp_utils::Direction::Vertical, true);
+    auto it = array.begin_upper_left_corner(cpp_utils::Direction::South, true);
     EXPECT_EQ(*it, 1);
     ++it;
     EXPECT_EQ(*it, 4);
@@ -159,6 +217,50 @@ namespace {
     EXPECT_EQ(*it, 3);
     ++it;
     EXPECT_EQ(*it, 6);
+    ++it;
+    EXPECT_EQ(it, array.end());
+  }
+
+  TEST(Array2DTest, IteratesWestFlat) {
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    cpp_utils::Array2D<int> const array(2, 3, vec);
+    // The array looks like this:
+    // 1 2 3
+    // 4 5 6
+    auto it = array.begin_lower_right_corner(cpp_utils::Direction::West, true);
+    EXPECT_EQ(*it, 6);
+    ++it;
+    EXPECT_EQ(*it, 5);
+    ++it;
+    EXPECT_EQ(*it, 4);
+    ++it;
+    EXPECT_EQ(*it, 3);
+    ++it;
+    EXPECT_EQ(*it, 2);
+    ++it;
+    EXPECT_EQ(*it, 1);
+    ++it;
+    EXPECT_EQ(it, array.end());
+  }
+
+  TEST(Array2DTest, IteratesNorthFlat) {
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    cpp_utils::Array2D<int> const array(2, 3, vec);
+    // The array looks like this:
+    // 1 2 3
+    // 4 5 6
+    auto it = array.begin_lower_right_corner(cpp_utils::Direction::North, true);
+    EXPECT_EQ(*it, 6);
+    ++it;
+    EXPECT_EQ(*it, 3);
+    ++it;
+    EXPECT_EQ(*it, 5);
+    ++it;
+    EXPECT_EQ(*it, 2);
+    ++it;
+    EXPECT_EQ(*it, 4);
+    ++it;
+    EXPECT_EQ(*it, 1);
     ++it;
     EXPECT_EQ(it, array.end());
   }
@@ -178,6 +280,12 @@ namespace {
     // 1 2 3
     // 4 5 6
     std::string expected = "Array2D(2x3)\n1 2 3\n4 5 6\n";
+    EXPECT_EQ(fmt::format("{}", array), expected);
+  }
+
+  TEST(Array2DTest, FormatEmpty) {
+    cpp_utils::Array2D<int> const array(0, 0);
+    std::string expected = "Array2D(0x0)\n";
     EXPECT_EQ(fmt::format("{}", array), expected);
   }
 

@@ -8,17 +8,18 @@
 #include <iterator>
 #include <optional>
 #include <span>
+#include <stdexcept>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
 namespace cpp_utils {
-  enum class Direction { Horizontal, Vertical, Diagonal, MinorDiagonal };
+  enum class Direction { East, SouthEast, South, SouthWest, West, NorthWest, North, NorthEast };
   template <typename T>
   class Array2D {
    public:
-    static constexpr Direction default_direction = Direction::Horizontal;
+    static constexpr Direction default_direction = Direction::East;
     static constexpr bool default_flatten = false;
     static constexpr bool default_is_const = false;
 
@@ -70,14 +71,22 @@ namespace cpp_utils {
       using container_pointer = typename std::conditional_t<IsConst, Array2D const*, Array2D*>;
       using container_reference = typename std::conditional_t<IsConst, Array2D const&, Array2D&>;
 
+      class DiagonalFlattenNotImplemented : public std::logic_error {
+       public:
+        DiagonalFlattenNotImplemented()
+            : std::logic_error(
+                  "Combination of diagonal direction and flatten not yet implemented.") {}
+      };
+
       MyIterator(container_reference array,
                  int row,
                  int column,
                  Direction dir = default_direction,
                  bool flatten = default_flatten)
           : array_(array), row_(row), column_(column), dir(dir), flatten(flatten) {
-        if (flatten) {
-          assert(dir == Direction::Horizontal || dir == Direction::Vertical);
+        if (flatten && (dir == Direction::NorthEast || dir == Direction::SouthWest ||
+                        dir == Direction::NorthWest || dir == Direction::SouthEast)) {
+          throw DiagonalFlattenNotImplemented();
         }
       }
 
@@ -96,27 +105,49 @@ namespace cpp_utils {
 
       MyIterator& operator++() {
         switch (dir) {
-          case Direction::Horizontal:
+          case Direction::East:
             ++column_;
             if (flatten && column_ == array_.num_columns()) {
               column_ = 0;
               ++row_;
             }
             break;
-          case Direction::Vertical:
+          case Direction::SouthEast:
+            ++row_;
+            ++column_;
+            break;
+          case Direction::South:
             ++row_;
             if (flatten && row_ == array_.num_rows()) {
               row_ = 0;
               ++column_;
             }
             break;
-          case Direction::Diagonal:
-            ++row_;
-            ++column_;
-            break;
-          case Direction::MinorDiagonal:
+          case Direction::SouthWest:
             ++row_;
             --column_;
+            break;
+          case Direction::West:
+            --column_;
+            if (flatten && column_ == -1) {
+              column_ = array_.num_columns() - 1;
+              --row_;
+            }
+            break;
+          case Direction::NorthWest:
+            --row_;
+            --column_;
+            break;
+          case Direction::North:
+            --row_;
+            if (flatten && row_ == -1) {
+              row_ = array_.num_rows() - 1;
+              --column_;
+            }
+            break;
+          case Direction::NorthEast:
+            --row_;
+            ++column_;
             break;
         }
         if (!array_.valid_index(row_, column_)) {
