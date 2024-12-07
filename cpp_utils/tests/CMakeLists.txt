@@ -1,13 +1,4 @@
 
-include(GoogleTest)
-
-# tests/CMakeLists.txt
-enable_testing()
-
-# Add the Google Test library
-find_package(GTest REQUIRED)
-include_directories(${GTEST_INCLUDE_DIRS})
-
 # Add the test executable
 add_executable(test_exec test_main.cpp)
 gtest_discover_tests(test_exec)
