@@ -53,14 +53,16 @@ namespace {
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.begin_upper_left_corner();
+    auto range = array.range_from(array.upper_left_corner());
+    auto it = range.begin();
     EXPECT_EQ(*it, 1);
     ++it;
     EXPECT_EQ(*it, 2);
     ++it;
     EXPECT_EQ(*it, 3);
     ++it;
-    EXPECT_EQ(it, array.end());
+    EXPECT_EQ(it, range.end());
+    EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
   TEST(Array2DTest, IteratesSouthEast) {
@@ -69,12 +71,14 @@ namespace {
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.begin_upper_left_corner(cpp_utils::Direction::SouthEast);
+    auto range = array.range_from(array.upper_left_corner(), cpp_utils::Direction::SouthEast);
+    auto it = range.begin();
     EXPECT_EQ(*it, 1);
     ++it;
     EXPECT_EQ(*it, 5);
     ++it;
-    EXPECT_EQ(it, array.end());
+    EXPECT_EQ(it, range.end());
+    EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
   TEST(Array2DTest, IteratesSouth) {
@@ -83,12 +87,14 @@ namespace {
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.begin_upper_left_corner(cpp_utils::Direction::South);
+    auto range = array.range_from(array.upper_left_corner(), cpp_utils::Direction::South);
+    auto it = range.begin();
     EXPECT_EQ(*it, 1);
     ++it;
     EXPECT_EQ(*it, 4);
     ++it;
-    EXPECT_EQ(it, array.end());
+    EXPECT_EQ(it, range.end());
+    EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
   TEST(Array2DTest, IteratesSouthWest) {
@@ -97,12 +103,14 @@ namespace {
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.begin_upper_right_corner(cpp_utils::Direction::SouthWest);
+    auto range = array.range_from(array.upper_right_corner(), cpp_utils::Direction::SouthWest);
+    auto it = range.begin();
     EXPECT_EQ(*it, 3);
     ++it;
     EXPECT_EQ(*it, 5);
     ++it;
-    EXPECT_EQ(it, array.end());
+    EXPECT_EQ(it, range.end());
+    EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
   TEST(Array2DTest, IteratesWest) {
@@ -111,14 +119,16 @@ namespace {
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.begin_upper_right_corner(cpp_utils::Direction::West);
+    auto range = array.range_from(array.upper_right_corner(), cpp_utils::Direction::West);
+    auto it = range.begin();
     EXPECT_EQ(*it, 3);
     ++it;
     EXPECT_EQ(*it, 2);
     ++it;
     EXPECT_EQ(*it, 1);
     ++it;
-    EXPECT_EQ(it, array.end());
+    EXPECT_EQ(it, range.end());
+    EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
   TEST(Array2DTest, IteratesNorthWest) {
@@ -127,12 +137,14 @@ namespace {
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.begin_lower_right_corner(cpp_utils::Direction::NorthWest);
+    auto range = array.range_from(array.lower_right_corner(), cpp_utils::Direction::NorthWest);
+    auto it = range.begin();
     EXPECT_EQ(*it, 6);
     ++it;
     EXPECT_EQ(*it, 2);
     ++it;
-    EXPECT_EQ(it, array.end());
+    EXPECT_EQ(it, range.end());
+    EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
   TEST(Array2DTest, IteratesNorth) {
@@ -141,12 +153,14 @@ namespace {
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.begin_lower_left_corner(cpp_utils::Direction::North);
+    auto range = array.range_from(array.lower_left_corner(), cpp_utils::Direction::North);
+    auto it = range.begin();
     EXPECT_EQ(*it, 4);
     ++it;
     EXPECT_EQ(*it, 1);
     ++it;
-    EXPECT_EQ(it, array.end());
+    EXPECT_EQ(it, range.end());
+    EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
   TEST(Array2DTest, IteratesNorthEast) {
@@ -155,35 +169,23 @@ namespace {
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.begin_lower_left_corner(cpp_utils::Direction::NorthEast);
+    auto range = array.range_from(array.lower_left_corner(), cpp_utils::Direction::NorthEast);
+    auto it = range.begin();
     EXPECT_EQ(*it, 4);
     ++it;
     EXPECT_EQ(*it, 2);
     ++it;
-    EXPECT_EQ(it, array.end());
+    EXPECT_EQ(it, range.end());
+    EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
-  TEST(Array2DTest, IteratorFrom) {
+  TEST(Array2DTest, IteratesDefaultFlatten) {
     auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
     cpp_utils::Array2D<int> const array(2, 3, vec);
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.iterator_from(1, 1);
-    EXPECT_EQ(*it, 5);
-    ++it;
-    EXPECT_EQ(*it, 6);
-    ++it;
-    EXPECT_EQ(it, array.end());
-  }
-
-  TEST(Array2DTest, IteratesEastFlat) {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    cpp_utils::Array2D<int> const array(2, 3, vec);
-    // The array looks like this:
-    // 1 2 3
-    // 4 5 6
-    auto it = array.begin_upper_left_corner(cpp_utils::Direction::East, true);
+    auto it = array.begin();
     EXPECT_EQ(*it, 1);
     ++it;
     EXPECT_EQ(*it, 2);
@@ -197,6 +199,7 @@ namespace {
     EXPECT_EQ(*it, 6);
     ++it;
     EXPECT_EQ(it, array.end());
+    EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
   TEST(Array2DTest, IteratesSouthFlat) {
@@ -205,7 +208,8 @@ namespace {
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.begin_upper_left_corner(cpp_utils::Direction::South, true);
+    constexpr auto dir = cpp_utils::Direction::South;
+    auto it = array.begin(dir);
     EXPECT_EQ(*it, 1);
     ++it;
     EXPECT_EQ(*it, 4);
@@ -218,7 +222,8 @@ namespace {
     ++it;
     EXPECT_EQ(*it, 6);
     ++it;
-    EXPECT_EQ(it, array.end());
+    EXPECT_EQ(it, array.end(dir));
+    EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
   TEST(Array2DTest, IteratesWestFlat) {
@@ -227,7 +232,8 @@ namespace {
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.begin_lower_right_corner(cpp_utils::Direction::West, true);
+    constexpr auto dir = cpp_utils::Direction::West;
+    auto it = array.begin(dir);
     EXPECT_EQ(*it, 6);
     ++it;
     EXPECT_EQ(*it, 5);
@@ -240,7 +246,8 @@ namespace {
     ++it;
     EXPECT_EQ(*it, 1);
     ++it;
-    EXPECT_EQ(it, array.end());
+    EXPECT_EQ(it, array.end(dir));
+    EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
   TEST(Array2DTest, IteratesNorthFlat) {
@@ -249,7 +256,8 @@ namespace {
     // The array looks like this:
     // 1 2 3
     // 4 5 6
-    auto it = array.begin_lower_right_corner(cpp_utils::Direction::North, true);
+    constexpr auto dir = cpp_utils::Direction::North;
+    auto it = array.begin(dir);
     EXPECT_EQ(*it, 6);
     ++it;
     EXPECT_EQ(*it, 3);
@@ -262,13 +270,14 @@ namespace {
     ++it;
     EXPECT_EQ(*it, 1);
     ++it;
-    EXPECT_EQ(it, array.end());
+    EXPECT_EQ(it, array.end(dir));
+    EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
   TEST(Array2DTest, MutableIterator) {
     auto vec = std::vector<int>{1, 2, 3, 4, 5, 6};
     cpp_utils::Array2D<int> array(2, 3, vec);
-    auto it = array.begin_upper_left_corner();
+    auto it = array.begin();
     *it = 10;
     EXPECT_EQ(array(0, 0), 10);
   }

@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <iterator>
 #include <optional>
 #include <span>
@@ -15,14 +16,25 @@
 #include <vector>
 
 namespace cpp_utils {
+
+  struct Sentinel {};
+
   enum class Direction { East, SouthEast, South, SouthWest, West, NorthWest, North, NorthEast };
   template <typename T>
   class Array2D {
    public:
     static constexpr Direction default_direction = Direction::East;
     static constexpr bool default_flatten = false;
-    static constexpr bool default_is_const = false;
 
+    // Exceptions
+    class DiagonalFlattenNotImplemented : public std::logic_error {
+     public:
+      DiagonalFlattenNotImplemented()
+          : std::logic_error("Combination of diagonal direction and flatten not yet implemented.") {
+      }
+    };
+
+    // Constructors
     Array2D(int num_rows, int num_columns)
         : num_rows_(num_rows),
           num_columns_(num_columns),
@@ -39,13 +51,13 @@ namespace cpp_utils {
     Array2D(int num_rows,
             int num_columns,
             std::span<const T> const& values,
-            Direction dir = default_direction)
+            Direction direction = default_direction)
         : num_rows_(num_rows),
           num_columns_(num_columns),
           data_(num_rows, std::vector<T>(num_columns)) {
       assert(values.size() == num_rows_ * num_columns_);
 
-      std::transform(values.begin(), values.end(), begin(dir, true),
+      std::transform(values.begin(), values.end(), begin(direction),
                      [](auto const& value) { return value; });
     }
 
@@ -57,10 +69,14 @@ namespace cpp_utils {
     }
 
     T& operator()(int row, int col) { return data_[row][col]; }
+    T& operator()(std::pair<int, int> coords) { return data_[coords.first][coords.second]; }
 
     const T& operator()(int row, int col) const { return data_[row][col]; }
+    const T& operator()(std::pair<int, int> coords) const {
+      return data_[coords.first][coords.second];
+    }
 
-    template <bool IsConst = default_is_const>
+    template <bool IsConst>
     class MyIterator {
      public:
       using iterator_category = std::forward_iterator_tag;
@@ -71,32 +87,25 @@ namespace cpp_utils {
       using container_pointer = typename std::conditional_t<IsConst, Array2D const*, Array2D*>;
       using container_reference = typename std::conditional_t<IsConst, Array2D const&, Array2D&>;
 
-      class DiagonalFlattenNotImplemented : public std::logic_error {
-       public:
-        DiagonalFlattenNotImplemented()
-            : std::logic_error(
-                  "Combination of diagonal direction and flatten not yet implemented.") {}
-      };
-
       MyIterator(container_reference array,
-                 int row,
-                 int column,
-                 Direction dir = default_direction,
+                 std::pair<int, int> starting_point,
+                 Direction direction = default_direction,
                  bool flatten = default_flatten)
-          : array_(array), row_(row), column_(column), dir(dir), flatten(flatten) {
-        if (flatten && (dir == Direction::NorthEast || dir == Direction::SouthWest ||
-                        dir == Direction::NorthWest || dir == Direction::SouthEast)) {
+          : array_(array),
+            row_(starting_point.first),
+            column_(starting_point.second),
+            direction(direction),
+            flatten(flatten) {
+        if (flatten && (direction == Direction::NorthEast || direction == Direction::SouthWest ||
+                        direction == Direction::NorthWest || direction == Direction::SouthEast)) {
           throw DiagonalFlattenNotImplemented();
         }
       }
 
-      Direction dir;
+      Direction direction;
       bool flatten;
 
-      template <bool _IsConst = IsConst>
-      std::enable_if_t<_IsConst, reference> operator*() const {
-        return array_(row_, column_);
-      }
+      T const& operator*() const { return array_(row_, column_); }
 
       template <bool _IsConst = IsConst>
       std::enable_if_t<!_IsConst, reference> operator*() {
@@ -104,7 +113,7 @@ namespace cpp_utils {
       }
 
       MyIterator& operator++() {
-        switch (dir) {
+        switch (direction) {
           case Direction::East:
             ++column_;
             if (flatten && column_ == array_.num_columns()) {
@@ -150,11 +159,6 @@ namespace cpp_utils {
             ++column_;
             break;
         }
-        if (!array_.valid_index(row_, column_)) {
-          // jump to the end
-          row_ = array_.num_rows();
-          column_ = array_.num_columns();
-        }
         return *this;
       }
 
@@ -169,6 +173,8 @@ namespace cpp_utils {
         return std::tie(row_, column_) == std::tie(other.row_, other.column_);
       }
 
+      bool operator==(Sentinel const& other) const { return !array_.valid_index(row_, column_); }
+
      private:
       container_reference array_;
       int row_;
@@ -178,73 +184,157 @@ namespace cpp_utils {
     using Iterator = MyIterator<false>;
     using ConstIterator = MyIterator<true>;
 
-    Iterator begin_upper_left_corner(Direction dir = default_direction,
-                                     bool flatten = default_flatten) {
-      return Iterator(*this, 0, 0, dir, flatten);
+    std::pair<int, int> upper_left_corner() const { return {0, 0}; }
+    std::pair<int, int> upper_right_corner() const { return {0, num_columns_ - 1}; }
+    std::pair<int, int> lower_left_corner() const { return {num_rows_ - 1, 0}; }
+    std::pair<int, int> lower_right_corner() const { return {num_rows_ - 1, num_columns_ - 1}; }
+
+    Iterator begin(Direction direction = default_direction) {
+      return Iterator(*this, flatten_begin_coords(direction), direction, true);
+    }
+    ConstIterator begin(Direction direction = default_direction) const {
+      return ConstIterator(*this, flatten_begin_coords(direction), direction, true);
     }
 
-    Iterator begin_upper_right_corner(Direction dir = default_direction,
-                                      bool flatten = default_flatten) {
-      return Iterator(*this, 0, num_columns_ - 1, dir, flatten);
+    Iterator end(Direction direction = default_direction) {
+      return Iterator(*this, flatten_end_coords(direction), direction, true);
+    }
+    ConstIterator end(Direction direction = default_direction) const {
+      return ConstIterator(*this, flatten_end_coords(direction), direction, true);
     }
 
-    Iterator begin_lower_left_corner(Direction dir = default_direction,
-                                     bool flatten = default_flatten) {
-      return Iterator(*this, num_rows_ - 1, 0, dir, flatten);
+    template <bool IsConst>
+    class MyRange {
+      using container_reference = typename std::conditional_t<IsConst, Array2D const&, Array2D&>;
+
+     public:
+      MyRange(Array2D const& array,
+              std::pair<int, int> start_coords,
+              Direction direction,
+              bool flatten)
+          : array_(array), start_coords_(start_coords), direction_(direction), flatten_(flatten) {}
+
+      ConstIterator begin() const {
+        return ConstIterator(array_, start_coords_, direction_, flatten_);
+      }
+      template <bool _IsConst = IsConst>
+      std::enable_if_t<!_IsConst, Iterator> begin() const {
+        return Iterator(array_, start_coords_, direction_, flatten_);
+      }
+
+      ConstIterator end() const {
+        return ConstIterator(array_, end_coords(), direction_, flatten_);
+      }
+      template <bool _IsConst = IsConst>
+      std::enable_if_t<!_IsConst, Iterator> end() const {
+        return Iterator(array_, end_coords(), direction_, flatten_);
+      }
+
+      std::pair<int, int> start_coords() const { return start_coords_; }
+      std::pair<int, int> end_coords() const {
+        if (flatten_) {
+          return array_.flatten_end_coords(direction_);
+        } else {
+          return array_.end_coords(start_coords_, direction_);
+        }
+      }
+
+     private:
+      Array2D const& array_;
+      std::pair<int, int> start_coords_;
+      Direction direction_;
+      bool flatten_;
+    };
+
+    using Range = MyRange<false>;
+    using ConstRange = MyRange<true>;
+
+    Range range_from(std::pair<int, int> start_coords,
+                     Direction direction = default_direction,
+                     bool flatten = default_flatten) {
+      return Range(*this, start_coords, direction, flatten);
     }
 
-    Iterator begin_lower_right_corner(Direction dir = default_direction,
-                                      bool flatten = default_flatten) {
-      return Iterator(*this, num_rows_ - 1, num_columns_ - 1, dir, flatten);
-    }
-
-    ConstIterator begin_upper_left_corner(Direction dir = default_direction,
-                                          bool flatten = default_flatten) const {
-      return ConstIterator(*this, 0, 0, dir, flatten);
-    }
-
-    ConstIterator begin_upper_right_corner(Direction dir = default_direction,
-                                           bool flatten = default_flatten) const {
-      return ConstIterator(*this, 0, num_columns_ - 1, dir, flatten);
-    }
-
-    ConstIterator begin_lower_left_corner(Direction dir = default_direction,
-                                          bool flatten = default_flatten) const {
-      return ConstIterator(*this, num_rows_ - 1, 0, dir, flatten);
-    }
-
-    ConstIterator begin_lower_right_corner(Direction dir = default_direction,
-                                           bool flatten = default_flatten) const {
-      return ConstIterator(*this, num_rows_ - 1, num_columns_ - 1, dir, flatten);
-    }
-
-    Iterator begin(Direction dir = default_direction, bool flatten = default_flatten) {
-      return begin_upper_left_corner(dir, flatten);
-    }
-
-    Iterator end() { return Iterator(*this, num_rows_, num_columns_); }
-
-    ConstIterator begin(Direction dir = default_direction, bool flatten = default_flatten) const {
-      return begin_upper_left_corner(dir, flatten);
-    }
-
-    ConstIterator end() const { return ConstIterator(*this, num_rows_, num_columns_); }
-
-    Iterator iterator_from(int i,
-                           int j,
-                           Direction dir = default_direction,
-                           bool flatten = default_flatten) {
-      return Iterator(*this, i, j, dir, flatten);
-    }
-
-    ConstIterator iterator_from(int i,
-                                int j,
-                                Direction dir = default_direction,
-                                bool flatten = default_flatten) const {
-      return ConstIterator(*this, i, j, dir, flatten);
+    ConstRange range_from(std::pair<int, int> start_coords,
+                          Direction direction = default_direction,
+                          bool flatten = default_flatten) const {
+      return ConstRange(*this, start_coords, direction, flatten);
     }
 
    private:
+    std::pair<int, int> flatten_begin_coords(Direction direction) const {
+      switch (direction) {
+        case Direction::East:
+          return upper_left_corner();
+        case Direction::South:
+          return upper_left_corner();
+        case Direction::West:
+          return lower_right_corner();
+        case Direction::North:
+          return lower_right_corner();
+        default:
+          throw DiagonalFlattenNotImplemented();
+      }
+    }
+
+    std::pair<int, int> flatten_end_coords(Direction direction) const {
+      switch (direction) {
+        case Direction::East:
+          return {num_rows_, 0};
+        case Direction::South:
+          return {0, num_columns_};
+        case Direction::West:
+          return {-1, num_columns_ - 1};
+        case Direction::North:
+          return {num_rows_ - 1, -1};
+        default:
+          throw DiagonalFlattenNotImplemented();
+      }
+    }
+
+    std::pair<int, int> end_coords(std::pair<int, int> start_coords, Direction direction) const {
+      std::pair<int, int> result;
+      switch (direction) {
+        case Direction::East:
+          result = {start_coords.first, num_columns_};
+          break;
+        case Direction::South:
+          result = {num_rows_, start_coords.second};
+          break;
+        case Direction::West:
+          result = {start_coords.first, -1};
+          break;
+        case Direction::North:
+          result = {-1, start_coords.second};
+          break;
+        case Direction::SouthEast: {
+          int distance_to_right = num_columns_ - start_coords.second;
+          int distance_to_bottom = num_rows_ - start_coords.first;
+          int distance = std::min(distance_to_right, distance_to_bottom);
+          result = {start_coords.first + distance, start_coords.second + distance};
+        } break;
+        case Direction::SouthWest: {
+          int distance_to_left = start_coords.second + 1;
+          int distance_to_bottom = num_rows_ - start_coords.first;
+          int distance = std::min(distance_to_left, distance_to_bottom);
+          result = {start_coords.first + distance, start_coords.second - distance};
+        } break;
+        case Direction::NorthWest: {
+          int distance_to_left = start_coords.second + 1;
+          int distance_to_top = start_coords.first + 1;
+          int distance = std::min(distance_to_left, distance_to_top);
+          result = {start_coords.first - distance, start_coords.second - distance};
+        } break;
+        case Direction::NorthEast: {
+          int distance_to_right = num_columns_ - start_coords.second;
+          int distance_to_top = start_coords.first + 1;
+          int distance = std::min(distance_to_right, distance_to_top);
+          result = {start_coords.first - distance, start_coords.second + distance};
+        } break;
+      }
+      return result;
+    }
+
     int num_rows_;
     int num_columns_;
     std::vector<std::vector<T>> data_;
@@ -261,9 +351,8 @@ class fmt::formatter<cpp_utils::Array2D<T>> {
     auto result =
         fmt::format_to(ctx.out(), "Array2D({}x{})\n", array.num_rows(), array.num_columns());
     for (int row = 0; row < array.num_rows(); ++row) {
-      auto row_iterator = array.iterator_from(row, 0);
-      result = fmt::format_to(ctx.out(), "{}",
-                              fmt::join(row_iterator, row_iterator + array.num_columns(), " "));
+      auto row_range = array.range_from({row, 0});
+      result = fmt::format_to(ctx.out(), "{}", fmt::join(row_range, " "));
       result = fmt::format_to(ctx.out(), "\n");
     }
     return result;
