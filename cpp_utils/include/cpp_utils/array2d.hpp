@@ -20,6 +20,28 @@ namespace cpp_utils {
   struct Sentinel {};
 
   enum class Direction { East, SouthEast, South, SouthWest, West, NorthWest, North, NorthEast };
+
+  Direction opposite(Direction direction) {
+    switch (direction) {
+      case Direction::East:
+        return Direction::West;
+      case Direction::SouthEast:
+        return Direction::NorthWest;
+      case Direction::South:
+        return Direction::North;
+      case Direction::SouthWest:
+        return Direction::NorthEast;
+      case Direction::West:
+        return Direction::East;
+      case Direction::NorthWest:
+        return Direction::SouthEast;
+      case Direction::North:
+        return Direction::South;
+      case Direction::NorthEast:
+        return Direction::SouthWest;
+    }
+  }
+
   template <typename T>
   class Array2D {
    public:
@@ -67,19 +89,76 @@ namespace cpp_utils {
     bool valid_index(int row, int col) const {
       return row >= 0 && row < num_rows_ && col >= 0 && col < num_columns_;
     }
+    bool valid_index(std::pair<int, int> coords) const {
+      return valid_index(coords.first, coords.second);
+    }
 
     T& operator()(int row, int col) { return data_[row][col]; }
-    T& operator()(std::pair<int, int> coords) { return data_[coords.first][coords.second]; }
+    T& operator()(std::pair<int, int> coords) { return (*this)(coords.first, coords.second); }
 
     const T& operator()(int row, int col) const { return data_[row][col]; }
     const T& operator()(std::pair<int, int> coords) const {
       return data_[coords.first][coords.second];
     }
 
+    const std::pair<int, int> step_coords_towards_direction(std::pair<int, int> coords,
+                                                            Direction direction,
+                                                            bool flatten = false) const {
+      std::pair<int, int> result = coords;
+      switch (direction) {
+        case Direction::East:
+          ++result.second;
+          if (flatten && result.second == num_columns()) {
+            result.second = 0;
+            ++result.first;
+          }
+          break;
+        case Direction::SouthEast:
+          ++result.first;
+          ++result.second;
+          break;
+        case Direction::South:
+          ++result.first;
+          if (flatten && result.first == num_rows()) {
+            result.first = 0;
+            ++result.second;
+            ;
+          }
+          break;
+        case Direction::SouthWest:
+          ++result.first;
+          --result.second;
+          break;
+        case Direction::West:
+          --result.second;
+          if (flatten && result.second == -1) {
+            result.second = num_columns() - 1;
+            --result.first;
+          }
+          break;
+        case Direction::NorthWest:
+          --result.first;
+          --result.second;
+          break;
+        case Direction::North:
+          --result.first;
+          if (flatten && result.first == -1) {
+            result.first = num_rows() - 1;
+            --result.second;
+          }
+          break;
+        case Direction::NorthEast:
+          --result.first;
+          ++result.second;
+          break;
+      }
+      return result;
+    }
+
     template <bool IsConst>
     class MyIterator {
      public:
-      using iterator_category = std::forward_iterator_tag;
+      using iterator_category = std::bidirectional_iterator_tag;
       using value_type = T;
       using difference_type = std::ptrdiff_t;
       using reference = typename std::conditional_t<IsConst, T const&, T&>;
@@ -91,11 +170,7 @@ namespace cpp_utils {
                  std::pair<int, int> starting_point,
                  Direction direction = default_direction,
                  bool flatten = default_flatten)
-          : array_(array),
-            row_(starting_point.first),
-            column_(starting_point.second),
-            direction(direction),
-            flatten(flatten) {
+          : array_(array), coords_(starting_point), direction(direction), flatten(flatten) {
         if (flatten && (direction == Direction::NorthEast || direction == Direction::SouthWest ||
                         direction == Direction::NorthWest || direction == Direction::SouthEast)) {
           throw DiagonalFlattenNotImplemented();
@@ -105,60 +180,20 @@ namespace cpp_utils {
       Direction direction;
       bool flatten;
 
-      T const& operator*() const { return array_(row_, column_); }
+      T const& operator*() const { return array_(coords_); }
 
       template <bool _IsConst = IsConst>
       std::enable_if_t<!_IsConst, reference> operator*() {
-        return array_(row_, column_);
+        return array_(coords_);
       }
 
       MyIterator& operator++() {
-        switch (direction) {
-          case Direction::East:
-            ++column_;
-            if (flatten && column_ == array_.num_columns()) {
-              column_ = 0;
-              ++row_;
-            }
-            break;
-          case Direction::SouthEast:
-            ++row_;
-            ++column_;
-            break;
-          case Direction::South:
-            ++row_;
-            if (flatten && row_ == array_.num_rows()) {
-              row_ = 0;
-              ++column_;
-            }
-            break;
-          case Direction::SouthWest:
-            ++row_;
-            --column_;
-            break;
-          case Direction::West:
-            --column_;
-            if (flatten && column_ == -1) {
-              column_ = array_.num_columns() - 1;
-              --row_;
-            }
-            break;
-          case Direction::NorthWest:
-            --row_;
-            --column_;
-            break;
-          case Direction::North:
-            --row_;
-            if (flatten && row_ == -1) {
-              row_ = array_.num_rows() - 1;
-              --column_;
-            }
-            break;
-          case Direction::NorthEast:
-            --row_;
-            ++column_;
-            break;
-        }
+        coords_ = array_.step_coords_towards_direction(coords_, direction, flatten);
+        return *this;
+      }
+
+      MyIterator& operator--() {
+        coords_ = array_.step_coords_towards_direction(coords_, opposite(direction), flatten);
         return *this;
       }
 
@@ -169,16 +204,20 @@ namespace cpp_utils {
         return *this;
       }
 
-      bool operator==(MyIterator const& other) const {
-        return std::tie(row_, column_) == std::tie(other.row_, other.column_);
+      MyIterator& operator-(int n) {
+        for (int k = 0; k < n; ++k) {
+          --(*this);
+        }
+        return *this;
       }
 
-      bool operator==(Sentinel const& other) const { return !array_.valid_index(row_, column_); }
+      bool operator==(MyIterator const& other) const { return coords_ == other.coords_; }
+
+      bool operator==(Sentinel const& other) const { return !array_.valid_index(coords_); }
 
      private:
       container_reference array_;
-      int row_;
-      int column_;
+      std::pair<int, int> coords_;
     };
 
     using Iterator = MyIterator<false>;

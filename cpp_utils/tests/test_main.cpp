@@ -65,6 +65,31 @@ namespace {
     EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
+  TEST(Array2DTest, IteratesPartialRange) {
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    cpp_utils::Array2D<int> const array(2, 3, vec);
+    auto range = array.range_from({0, 1});
+    auto it = range.begin();
+    EXPECT_EQ(*it, 2);
+    ++it;
+    EXPECT_EQ(*it, 3);
+    ++it;
+    EXPECT_EQ(it, range.end());
+    EXPECT_EQ(it, cpp_utils::Sentinel());
+  }
+
+  TEST(Array2DTest, IteratesPartialRangeEndMinusOne) {
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    cpp_utils::Array2D<int> const array(2, 3, vec);
+    auto range = array.range_from(array.upper_left_corner());
+    auto it = range.begin();
+    EXPECT_EQ(*it, 1);
+    ++it;
+    EXPECT_EQ(*it, 2);
+    ++it;
+    EXPECT_EQ(it, range.end() - 1);
+  }
+
   TEST(Array2DTest, IteratesSouthEast) {
     auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
     cpp_utils::Array2D<int> const array(2, 3, vec);
@@ -271,6 +296,27 @@ namespace {
     EXPECT_EQ(*it, 1);
     ++it;
     EXPECT_EQ(it, array.end(dir));
+    EXPECT_EQ(it, cpp_utils::Sentinel());
+  }
+
+  TEST(Array2DTest, IteratesBackwards) {
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    cpp_utils::Array2D<int> array(2, 3, vec);
+    auto it = array.end();
+    --it;
+    EXPECT_EQ(*it, 6);
+    --it;
+    EXPECT_EQ(*it, 5);
+    --it;
+    EXPECT_EQ(*it, 4);
+    --it;
+    EXPECT_EQ(*it, 3);
+    --it;
+    EXPECT_EQ(*it, 2);
+    --it;
+    EXPECT_EQ(*it, 1);
+    EXPECT_EQ(it, array.begin());
+    --it;
     EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
