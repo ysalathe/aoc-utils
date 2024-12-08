@@ -96,8 +96,8 @@ namespace cpp_utils {
     T& operator()(int row, int col) { return data_[row][col]; }
     T& operator()(std::pair<int, int> coords) { return (*this)(coords.first, coords.second); }
 
-    const T& operator()(int row, int col) const { return data_[row][col]; }
-    const T& operator()(std::pair<int, int> coords) const {
+    auto const& operator()(int row, int col) const { return data_[row][col]; }
+    auto const& operator()(std::pair<int, int> coords) const {
       return data_[coords.first][coords.second];
     }
 
@@ -163,8 +163,10 @@ namespace cpp_utils {
       using difference_type = std::ptrdiff_t;
       using reference = typename std::conditional_t<IsConst, T const&, T&>;
       using pointer = typename std::conditional_t<IsConst, T const*, T*>;
-      using container_pointer = typename std::conditional_t<IsConst, Array2D const*, Array2D*>;
-      using container_reference = typename std::conditional_t<IsConst, Array2D const&, Array2D&>;
+      using container_pointer =
+          typename std::conditional_t<IsConst, Array2D<T> const*, Array2D<T>*>;
+      using container_reference =
+          typename std::conditional_t<IsConst, Array2D<T> const&, Array2D<T>&>;
 
       MyIterator(container_reference array,
                  std::pair<int, int> starting_point,
@@ -180,7 +182,7 @@ namespace cpp_utils {
       Direction direction;
       bool flatten;
 
-      T const& operator*() const { return array_(coords_); }
+      auto const& operator*() const { return array_(coords_); }
 
       template <bool _IsConst = IsConst>
       std::enable_if_t<!_IsConst, reference> operator*() {
@@ -244,7 +246,8 @@ namespace cpp_utils {
 
     template <bool IsConst>
     class MyRange {
-      using container_reference = typename std::conditional_t<IsConst, Array2D const&, Array2D&>;
+      using container_reference =
+          typename std::conditional_t<IsConst, Array2D<T> const&, Array2D<T>&>;
 
      public:
       MyRange(Array2D const& array,
