@@ -21,7 +21,7 @@ namespace cpp_utils {
 
   enum class Direction { East, SouthEast, South, SouthWest, West, NorthWest, North, NorthEast };
 
-  Direction opposite(Direction direction) {
+  Direction reverse_direction(Direction direction) {
     switch (direction) {
       case Direction::East:
         return Direction::West;
@@ -39,6 +39,8 @@ namespace cpp_utils {
         return Direction::South;
       case Direction::NorthEast:
         return Direction::SouthWest;
+      default:
+        throw std::invalid_argument("Invalid direction");
     }
   }
 
@@ -62,7 +64,7 @@ namespace cpp_utils {
           num_columns_(num_columns),
           data_(num_rows, std::vector<T>(num_columns)) {}
     Array2D(std::vector<std::vector<T>> data)
-        : num_rows_(data.size()), num_columns_(data[0].size()), data_{std::move(data)} {
+        : num_rows_(data.size()), num_columns_(data.at(0).size()), data_{std::move(data)} {
       assert(std::all_of(data.begin(), data.end(),
                          [this](auto const& row) { return row.size() == num_columns_; }));
     }
@@ -93,12 +95,12 @@ namespace cpp_utils {
       return valid_index(coords.first, coords.second);
     }
 
-    T& operator()(int row, int col) { return data_[row][col]; }
+    T& operator()(int row, int col) { return data_.at(row).at(col); }
     T& operator()(std::pair<int, int> coords) { return (*this)(coords.first, coords.second); }
 
-    auto const& operator()(int row, int col) const { return data_[row][col]; }
+    auto const& operator()(int row, int col) const { return data_.at(row).at(col); }
     auto const& operator()(std::pair<int, int> coords) const {
-      return data_[coords.first][coords.second];
+      return (*this)(coords.first, coords.second);
     }
 
     const std::pair<int, int> step_coords_towards_direction(std::pair<int, int> coords,
@@ -162,9 +164,6 @@ namespace cpp_utils {
       using value_type = T;
       using difference_type = std::ptrdiff_t;
       using reference = typename std::conditional_t<IsConst, T const&, T&>;
-      using pointer = typename std::conditional_t<IsConst, T const*, T*>;
-      using container_pointer =
-          typename std::conditional_t<IsConst, Array2D<T> const*, Array2D<T>*>;
       using container_reference =
           typename std::conditional_t<IsConst, Array2D<T> const&, Array2D<T>&>;
 
@@ -184,19 +183,38 @@ namespace cpp_utils {
 
       auto const& operator*() const { return array_(coords_); }
 
-      template <bool _IsConst = IsConst>
-      std::enable_if_t<!_IsConst, reference> operator*() {
+      reference operator*()
+        requires(!IsConst)
+      {
         return array_(coords_);
       }
 
+      // Pre-increment
       MyIterator& operator++() {
         coords_ = array_.step_coords_towards_direction(coords_, direction, flatten);
         return *this;
       }
 
+      // Post-increment
+      MyIterator operator++(int) {
+        MyIterator tmp = *this;
+        ++(*this);
+        return tmp;
+      }
+
+      // Pre-decrement
       MyIterator& operator--() {
-        coords_ = array_.step_coords_towards_direction(coords_, opposite(direction), flatten);
+        // Implement the reverse of step_coords_towards_direction
+        coords_ =
+            array_.step_coords_towards_direction(coords_, reverse_direction(direction), flatten);
         return *this;
+      }
+
+      // Post-decrement
+      MyIterator operator--(int) {
+        MyIterator tmp = *this;
+        --(*this);
+        return tmp;
       }
 
       MyIterator& operator+(int n) {
@@ -214,8 +232,7 @@ namespace cpp_utils {
       }
 
       bool operator==(MyIterator const& other) const { return coords_ == other.coords_; }
-
-      bool operator==(Sentinel const& other) const { return !array_.valid_index(coords_); }
+      bool operator==(Sentinel const&) const { return !array_.valid_index(coords_); }
 
      private:
       container_reference array_;
@@ -259,16 +276,20 @@ namespace cpp_utils {
       ConstIterator begin() const {
         return ConstIterator(array_, start_coords_, direction_, flatten_);
       }
-      template <bool _IsConst = IsConst>
-      std::enable_if_t<!_IsConst, Iterator> begin() const {
+
+      Iterator begin()
+        requires(!IsConst)
+      {
         return Iterator(array_, start_coords_, direction_, flatten_);
       }
 
       ConstIterator end() const {
         return ConstIterator(array_, end_coords(), direction_, flatten_);
       }
-      template <bool _IsConst = IsConst>
-      std::enable_if_t<!_IsConst, Iterator> end() const {
+
+      Iterator end()
+        requires(!IsConst)
+      {
         return Iterator(array_, end_coords(), direction_, flatten_);
       }
 
