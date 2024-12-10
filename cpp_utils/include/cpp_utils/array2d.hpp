@@ -409,12 +409,14 @@ namespace cpp_utils {
 
 }  // namespace cpp_utils
 
+// Custom formatter for Array2D<T>
 template <typename T>
 class fmt::formatter<cpp_utils::Array2D<T>> {
  public:
-  constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
-  template <typename Context>
-  constexpr auto format(cpp_utils::Array2D<T> const& array, Context& ctx) const {
+  constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
+
+  template <typename FormatContext>
+  auto format(cpp_utils::Array2D<T> const& array, FormatContext& ctx) -> decltype(ctx.out()) const {
     auto result =
         fmt::format_to(ctx.out(), "Array2D({}x{})\n", array.num_rows(), array.num_columns());
     for (int row = 0; row < array.num_rows(); ++row) {
