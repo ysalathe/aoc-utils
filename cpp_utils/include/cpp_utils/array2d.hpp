@@ -85,8 +85,8 @@ namespace cpp_utils {
       std::ranges::transform(values, begin(direction), [](auto const& value) { return value; });
     }
 
-    size_t num_rows() const { return num_rows_; };
-    size_t num_columns() const { return num_columns_; };
+    size_t num_rows() const { return num_rows_; }
+    size_t num_columns() const { return num_columns_; }
 
     bool valid_index(int row, int col) const {
       return row >= 0 && row < num_rows_ && col >= 0 && col < num_columns_;
