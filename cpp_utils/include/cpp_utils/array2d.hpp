@@ -8,6 +8,7 @@
 #include <cmath>
 #include <iterator>
 #include <optional>
+#include <ranges>
 #include <span>
 #include <stdexcept>
 #include <tuple>
@@ -81,8 +82,7 @@ namespace cpp_utils {
           data_(num_rows, std::vector<T>(num_columns)) {
       assert(values.size() == num_rows_ * num_columns_);
 
-      std::transform(values.begin(), values.end(), begin(direction),
-                     [](auto const& value) { return value; });
+      std::ranges::transform(values, begin(direction), [](auto const& value) { return value; });
     }
 
     size_t num_rows() const { return num_rows_; };
@@ -166,12 +166,14 @@ namespace cpp_utils {
       using reference = typename std::conditional_t<IsConst, T const&, T&>;
       using container_reference =
           typename std::conditional_t<IsConst, Array2D<T> const&, Array2D<T>&>;
+      using container_pointer =
+          typename std::conditional_t<IsConst, Array2D<T> const*, Array2D<T>*>;
 
       MyIterator(container_reference array,
                  std::pair<int, int> starting_point,
                  Direction direction = default_direction,
                  bool flatten = default_flatten)
-          : array_(array), coords_(starting_point), direction(direction), flatten(flatten) {
+          : array_(&array), coords_(starting_point), direction(direction), flatten(flatten) {
         if (flatten && (direction == Direction::NorthEast || direction == Direction::SouthWest ||
                         direction == Direction::NorthWest || direction == Direction::SouthEast)) {
           throw DiagonalFlattenNotImplemented();
@@ -181,17 +183,17 @@ namespace cpp_utils {
       Direction direction;
       bool flatten;
 
-      auto const& operator*() const { return array_(coords_); }
+      auto const& operator*() const { return (*array_)(coords_); }
 
       reference operator*()
         requires(!IsConst)
       {
-        return array_(coords_);
+        return (*array_)(coords_);
       }
 
       // Pre-increment
       MyIterator& operator++() {
-        coords_ = array_.step_coords_towards_direction(coords_, direction, flatten);
+        coords_ = array_->step_coords_towards_direction(coords_, direction, flatten);
         return *this;
       }
 
@@ -206,7 +208,7 @@ namespace cpp_utils {
       MyIterator& operator--() {
         // Implement the reverse of step_coords_towards_direction
         coords_ =
-            array_.step_coords_towards_direction(coords_, reverse_direction(direction), flatten);
+            array_->step_coords_towards_direction(coords_, reverse_direction(direction), flatten);
         return *this;
       }
 
@@ -232,10 +234,10 @@ namespace cpp_utils {
       }
 
       bool operator==(MyIterator const& other) const { return coords_ == other.coords_; }
-      bool operator==(Sentinel const&) const { return !array_.valid_index(coords_); }
+      bool operator==(Sentinel const&) const { return !array_->valid_index(coords_); }
 
      private:
-      container_reference array_;
+      container_pointer array_;
       std::pair<int, int> coords_;
     };
 
@@ -265,45 +267,47 @@ namespace cpp_utils {
     class MyRange {
       using container_reference =
           typename std::conditional_t<IsConst, Array2D<T> const&, Array2D<T>&>;
+      using container_pointer =
+          typename std::conditional_t<IsConst, Array2D<T> const*, Array2D<T>*>;
 
      public:
-      MyRange(Array2D const& array,
+      MyRange(container_reference array,
               std::pair<int, int> start_coords,
               Direction direction,
               bool flatten)
-          : array_(array), start_coords_(start_coords), direction_(direction), flatten_(flatten) {}
+          : array_(&array), start_coords_(start_coords), direction_(direction), flatten_(flatten) {}
 
       ConstIterator begin() const {
-        return ConstIterator(array_, start_coords_, direction_, flatten_);
+        return ConstIterator(*array_, start_coords_, direction_, flatten_);
       }
 
       Iterator begin()
         requires(!IsConst)
       {
-        return Iterator(array_, start_coords_, direction_, flatten_);
+        return Iterator(*array_, start_coords_, direction_, flatten_);
       }
 
       ConstIterator end() const {
-        return ConstIterator(array_, end_coords(), direction_, flatten_);
+        return ConstIterator(*array_, end_coords(), direction_, flatten_);
       }
 
       Iterator end()
         requires(!IsConst)
       {
-        return Iterator(array_, end_coords(), direction_, flatten_);
+        return Iterator(*array_, end_coords(), direction_, flatten_);
       }
 
       std::pair<int, int> start_coords() const { return start_coords_; }
       std::pair<int, int> end_coords() const {
         if (flatten_) {
-          return array_.flatten_end_coords(direction_);
+          return array_->flatten_end_coords(direction_);
         } else {
-          return array_.end_coords(start_coords_, direction_);
+          return array_->end_coords(start_coords_, direction_);
         }
       }
 
      private:
-      Array2D const& array_;
+      container_pointer array_;
       std::pair<int, int> start_coords_;
       Direction direction_;
       bool flatten_;
