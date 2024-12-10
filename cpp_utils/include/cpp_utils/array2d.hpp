@@ -411,8 +411,7 @@ namespace cpp_utils {
 
 // Custom formatter for Array2D<T>
 template <typename T>
-class fmt::formatter<cpp_utils::Array2D<T>> {
- public:
+struct fmt::formatter<cpp_utils::Array2D<T>> {
   constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
 
   template <typename FormatContext>
