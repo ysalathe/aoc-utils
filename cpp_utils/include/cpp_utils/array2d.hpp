@@ -20,6 +20,8 @@ namespace cpp_utils {
 
   struct Sentinel {};
 
+  using Coords = std::pair<int, int>;
+
   enum class Direction { East, SouthEast, South, SouthWest, West, NorthWest, North, NorthEast };
 
   Direction reverse_direction(Direction direction) {
@@ -116,24 +118,18 @@ namespace cpp_utils {
     bool valid_index(int row, int col) const {
       return row >= 0 && row < num_rows_ && col >= 0 && col < num_columns_;
     }
-    bool valid_index(std::pair<int, int> coords) const {
-      return valid_index(coords.first, coords.second);
-    }
+    bool valid_index(Coords coords) const { return valid_index(coords.first, coords.second); }
 
     reference operator()(int row, int col) { return data_.at(row).at(col); }
-    reference operator()(std::pair<int, int> coords) {
-      return (*this)(coords.first, coords.second);
-    }
+    reference operator()(Coords coords) { return (*this)(coords.first, coords.second); }
 
     auto const& operator()(int row, int col) const { return data_.at(row).at(col); }
-    auto const& operator()(std::pair<int, int> coords) const {
-      return (*this)(coords.first, coords.second);
-    }
+    auto const& operator()(Coords coords) const { return (*this)(coords.first, coords.second); }
 
-    const std::pair<int, int> step_coords_towards_direction(std::pair<int, int> coords,
-                                                            Direction direction,
-                                                            bool flatten = false) const {
-      std::pair<int, int> result = coords;
+    const Coords step_coords_towards_direction(Coords coords,
+                                               Direction direction,
+                                               bool flatten = false) const {
+      Coords result = coords;
       switch (direction) {
         case Direction::East:
           ++result.second;
@@ -199,7 +195,7 @@ namespace cpp_utils {
           typename std::conditional_t<IsConst, Array2D<T> const*, Array2D<T>*>;
 
       MyIterator(container_reference array,
-                 std::pair<int, int> starting_point,
+                 Coords starting_point,
                  Direction direction = default_direction,
                  bool flatten = default_flatten)
           : array_(&array), coords_(starting_point), direction(direction), flatten(flatten) {
@@ -267,16 +263,16 @@ namespace cpp_utils {
 
      private:
       container_pointer array_;
-      std::pair<int, int> coords_;
+      Coords coords_;
     };
 
     using Iterator = MyIterator<false>;
     using ConstIterator = MyIterator<true>;
 
-    std::pair<int, int> upper_left_corner() const { return {0, 0}; }
-    std::pair<int, int> upper_right_corner() const { return {0, num_columns_ - 1}; }
-    std::pair<int, int> lower_left_corner() const { return {num_rows_ - 1, 0}; }
-    std::pair<int, int> lower_right_corner() const { return {num_rows_ - 1, num_columns_ - 1}; }
+    Coords upper_left_corner() const { return {0, 0}; }
+    Coords upper_right_corner() const { return {0, num_columns_ - 1}; }
+    Coords lower_left_corner() const { return {num_rows_ - 1, 0}; }
+    Coords lower_right_corner() const { return {num_rows_ - 1, num_columns_ - 1}; }
 
     Iterator begin(Direction direction = default_direction) {
       return Iterator(*this, flatten_begin_coords(direction), direction, true);
@@ -300,10 +296,7 @@ namespace cpp_utils {
           typename std::conditional_t<IsConst, Array2D<T> const*, Array2D<T>*>;
 
      public:
-      MyRange(container_reference array,
-              std::pair<int, int> start_coords,
-              Direction direction,
-              bool flatten)
+      MyRange(container_reference array, Coords start_coords, Direction direction, bool flatten)
           : array_(&array), start_coords_(start_coords), direction_(direction), flatten_(flatten) {}
 
       ConstIterator begin() const {
@@ -326,8 +319,8 @@ namespace cpp_utils {
         return Iterator(*array_, end_coords(), direction_, flatten_);
       }
 
-      std::pair<int, int> start_coords() const { return start_coords_; }
-      std::pair<int, int> end_coords() const {
+      Coords start_coords() const { return start_coords_; }
+      Coords end_coords() const {
         if (flatten_) {
           return array_->flatten_end_coords(direction_);
         } else {
@@ -337,7 +330,7 @@ namespace cpp_utils {
 
      private:
       container_pointer array_;
-      std::pair<int, int> start_coords_;
+      Coords start_coords_;
       Direction direction_;
       bool flatten_;
     };
@@ -345,20 +338,20 @@ namespace cpp_utils {
     using Range = MyRange<false>;
     using ConstRange = MyRange<true>;
 
-    Range range_from(std::pair<int, int> start_coords,
+    Range range_from(Coords start_coords,
                      Direction direction = default_direction,
                      bool flatten = default_flatten) {
       return Range(*this, start_coords, direction, flatten);
     }
 
-    ConstRange range_from(std::pair<int, int> start_coords,
+    ConstRange range_from(Coords start_coords,
                           Direction direction = default_direction,
                           bool flatten = default_flatten) const {
       return ConstRange(*this, start_coords, direction, flatten);
     }
 
    private:
-    std::pair<int, int> flatten_begin_coords(Direction direction) const {
+    Coords flatten_begin_coords(Direction direction) const {
       switch (direction) {
         case Direction::East:
           return upper_left_corner();
@@ -373,7 +366,7 @@ namespace cpp_utils {
       }
     }
 
-    std::pair<int, int> flatten_end_coords(Direction direction) const {
+    Coords flatten_end_coords(Direction direction) const {
       switch (direction) {
         case Direction::East:
           return {num_rows_, 0};
@@ -388,8 +381,8 @@ namespace cpp_utils {
       }
     }
 
-    std::pair<int, int> end_coords(std::pair<int, int> start_coords, Direction direction) const {
-      std::pair<int, int> result;
+    Coords end_coords(Coords start_coords, Direction direction) const {
+      Coords result;
       switch (direction) {
         case Direction::East:
           result = {start_coords.first, num_columns_};
