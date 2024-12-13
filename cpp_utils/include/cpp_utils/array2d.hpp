@@ -45,11 +45,36 @@ namespace cpp_utils {
     }
   }
 
+  Direction turn_right_90_degrees(Direction direction) {
+    switch (direction) {
+      case Direction::East:
+        return Direction::South;
+      case Direction::South:
+        return Direction::West;
+      case Direction::West:
+        return Direction::North;
+      case Direction::North:
+        return Direction::East;
+      case Direction::SouthEast:
+        return Direction::SouthWest;
+      case Direction::SouthWest:
+        return Direction::NorthWest;
+      case Direction::NorthWest:
+        return Direction::NorthEast;
+      case Direction::NorthEast:
+        return Direction::SouthEast;
+      default:
+        throw std::invalid_argument("Invalid direction");
+    }
+  }
+
   template <typename T>
   class Array2D {
    public:
     static constexpr Direction default_direction = Direction::East;
     static constexpr bool default_flatten = false;
+
+    using reference = std::vector<T>::reference;
 
     // Exceptions
     class DiagonalFlattenNotImplemented : public std::logic_error {
@@ -95,8 +120,10 @@ namespace cpp_utils {
       return valid_index(coords.first, coords.second);
     }
 
-    T& operator()(int row, int col) { return data_.at(row).at(col); }
-    T& operator()(std::pair<int, int> coords) { return (*this)(coords.first, coords.second); }
+    reference operator()(int row, int col) { return data_.at(row).at(col); }
+    reference operator()(std::pair<int, int> coords) {
+      return (*this)(coords.first, coords.second);
+    }
 
     auto const& operator()(int row, int col) const { return data_.at(row).at(col); }
     auto const& operator()(std::pair<int, int> coords) const {
@@ -163,7 +190,9 @@ namespace cpp_utils {
       using iterator_category = std::bidirectional_iterator_tag;
       using value_type = T;
       using difference_type = std::ptrdiff_t;
-      using reference = typename std::conditional_t<IsConst, T const&, T&>;
+      using reference = typename std::conditional_t<IsConst,
+                                                    typename std::vector<T>::const_reference,
+                                                    typename std::vector<T>::reference>;
       using container_reference =
           typename std::conditional_t<IsConst, Array2D<T> const&, Array2D<T>&>;
       using container_pointer =
