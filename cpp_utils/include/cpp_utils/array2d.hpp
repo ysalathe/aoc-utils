@@ -483,8 +483,11 @@ namespace cpp_utils {
     }
 
     T& operator()(int row, int col) override {
+      cleanup();
       if (data_.find({row, col}) == data_.end()) {
         data_[{row, col}] = empty_element_;
+        // remember to clean up the data next time we access it
+        cleanup_coords_.push_back({row, col});
       }
       return data_[{row, col}];
     }
@@ -503,9 +506,19 @@ namespace cpp_utils {
 
     size_t size() const { return data_.size(); }
 
+    void cleanup() {
+      for (auto const& coords : cleanup_coords_) {
+        if (data_.at(coords) == empty_element_) {
+          data_.erase(coords);
+        }
+      }
+      cleanup_coords_.clear();
+    }
+
    private:
     std::map<Coords, T> data_;
     T empty_element_;
+    std::vector<Coords> cleanup_coords_;
   };
 
 }  // namespace cpp_utils

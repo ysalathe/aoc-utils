@@ -6,47 +6,6 @@
 
 namespace {
 
-  TEST(Array2DTest, Handles2DArrayWithVector) {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    cpp_utils::Array2D<int> const array(2, 3, vec);
-    // The array looks like this:
-    // 1 2 3
-    // 4 5 6
-    EXPECT_EQ(array(0, 0), 1);
-    EXPECT_EQ(array(0, 1), 2);
-    EXPECT_EQ(array(0, 2), 3);
-    EXPECT_EQ(array(1, 0), 4);
-    EXPECT_EQ(array(1, 1), 5);
-    EXPECT_EQ(array(1, 2), 6);
-  }
-
-  TEST(Array2DTest, Handles2DArrayWithNestedVector) {
-    cpp_utils::Array2D<int> const array(
-        std::vector<std::vector<int>>{std::vector<int>{1, 2, 3}, std::vector<int>{4, 5, 6}});
-    // The array looks like this:
-    // 1 2 3
-    // 4 5 6
-    EXPECT_EQ(array(0, 0), 1);
-    EXPECT_EQ(array(0, 1), 2);
-    EXPECT_EQ(array(0, 2), 3);
-    EXPECT_EQ(array(1, 0), 4);
-    EXPECT_EQ(array(1, 1), 5);
-    EXPECT_EQ(array(1, 2), 6);
-  }
-
-  TEST(Array2DTest, Handles2DArrayWithDefaultValues) {
-    cpp_utils::Array2D<int> const array(2, 3, 0);
-    // The array looks like this:
-    // 1 2 3
-    // 4 5 6
-    EXPECT_EQ(array(0, 0), 0);
-    EXPECT_EQ(array(0, 1), 0);
-    EXPECT_EQ(array(0, 2), 0);
-    EXPECT_EQ(array(1, 0), 0);
-    EXPECT_EQ(array(1, 1), 0);
-    EXPECT_EQ(array(1, 2), 0);
-  }
-
   // Factory functions to create different derivatives of Array2DBase
   // See https://github.com/google/googletest/blob/main/googletest/samples/sample6_unittest.cc
   template <class C>
@@ -326,6 +285,97 @@ namespace {
   TYPED_TEST(Array2DBaseTest, FormatEmpty) {
     std::string expected = "Array2DBase(0x0)\n";
     EXPECT_EQ(fmt::format("{}", *(this->empty_array_)), expected);
+  }
+
+  // Specialized tests for Array2D
+  TEST(Array2DTest, Handles2DArrayWithNestedVector) {
+    cpp_utils::Array2D<int> const array(
+        std::vector<std::vector<int>>{std::vector<int>{1, 2, 3}, std::vector<int>{4, 5, 6}});
+    // The array looks like this:
+    // 1 2 3
+    // 4 5 6
+    EXPECT_EQ(array(0, 0), 1);
+    EXPECT_EQ(array(0, 1), 2);
+    EXPECT_EQ(array(0, 2), 3);
+    EXPECT_EQ(array(1, 0), 4);
+    EXPECT_EQ(array(1, 1), 5);
+    EXPECT_EQ(array(1, 2), 6);
+  }
+
+  TEST(Array2DTest, Handles2DArrayWithDefaultValues) {
+    cpp_utils::Array2D<int> const array(2, 3, 0);
+    // The array looks like this:
+    // 1 2 3
+    // 4 5 6
+    EXPECT_EQ(array(0, 0), 0);
+    EXPECT_EQ(array(0, 1), 0);
+    EXPECT_EQ(array(0, 2), 0);
+    EXPECT_EQ(array(1, 0), 0);
+    EXPECT_EQ(array(1, 1), 0);
+    EXPECT_EQ(array(1, 2), 0);
+  }
+
+  // Specialized tests for SparseArray2D
+  TEST(SparseArray2DTest, Handles2DArrayWithNestedVector) {
+    cpp_utils::SparseArray2D<int> const array(
+        std::vector<std::vector<int>>{std::vector<int>{1, 2, 3}, std::vector<int>{4, 5, 6}}, 0);
+    // The array looks like this:
+    // 1 2 3
+    // 4 5 6
+    EXPECT_EQ(array(0, 0), 1);
+    EXPECT_EQ(array(0, 1), 2);
+    EXPECT_EQ(array(0, 2), 3);
+    EXPECT_EQ(array(1, 0), 4);
+    EXPECT_EQ(array(1, 1), 5);
+    EXPECT_EQ(array(1, 2), 6);
+  }
+
+  TEST(SparseArray2DTest, Handles2DArrayOnlyEmpty) {
+    cpp_utils::SparseArray2D<int> const array(2, 3, 0);
+    EXPECT_EQ(array.empty_element(), 0);
+    // The array looks like this:
+    // 1 2 3
+    // 4 5 6
+    EXPECT_EQ(array(0, 0), 0);
+    EXPECT_EQ(array(0, 1), 0);
+    EXPECT_EQ(array(0, 2), 0);
+    EXPECT_EQ(array(1, 0), 0);
+    EXPECT_EQ(array(1, 1), 0);
+    EXPECT_EQ(array(1, 2), 0);
+    EXPECT_EQ(array.size(), 0);
+  }
+
+  TEST(SparseArray2DTest, Handles2DArrayOnlyOneNonEmpty) {
+    cpp_utils::SparseArray2D<int> array(2, 3, 0);
+    array(1, 1) = 1;
+    EXPECT_EQ(array.empty_element(), 0);
+    // The array looks like this:
+    // 1 2 3
+    // 4 5 6
+    EXPECT_EQ(std::as_const(array)(0, 0), 0);
+    EXPECT_EQ(std::as_const(array)(0, 1), 0);
+    EXPECT_EQ(std::as_const(array)(0, 2), 0);
+    EXPECT_EQ(std::as_const(array)(1, 0), 0);
+    EXPECT_EQ(std::as_const(array)(1, 1), 1);
+    EXPECT_EQ(std::as_const(array)(1, 2), 0);
+    EXPECT_EQ(array.size(), 1);
+  }
+
+  TEST(SparseArray2DTest, CleanupWorks) {
+    cpp_utils::SparseArray2D<int> array(2, 3, 0);
+    array(1, 1) = 1;
+    EXPECT_EQ(array.empty_element(), 0);
+    // The array looks like this:
+    // 1 2 3
+    // 4 5 6
+    EXPECT_EQ(array(0, 0), 0);
+    EXPECT_EQ(array(0, 1), 0);
+    EXPECT_EQ(array(0, 2), 0);
+    EXPECT_EQ(array(1, 0), 0);
+    EXPECT_EQ(array(1, 1), 1);
+    EXPECT_EQ(array(1, 2), 0);
+    array.cleanup();
+    EXPECT_EQ(array.size(), 1);
   }
 
 }  // namespace
