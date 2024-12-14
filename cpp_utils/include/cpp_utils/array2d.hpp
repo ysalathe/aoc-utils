@@ -7,13 +7,14 @@
 #include <cassert>
 #include <cmath>
 #include <iterator>
-#include <map>
 #include <optional>
 #include <ranges>
 #include <span>
 #include <stdexcept>
 #include <tuple>
 #include <type_traits>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -22,6 +23,23 @@ namespace cpp_utils {
   struct Sentinel {};
 
   using Coords = std::pair<int, int>;
+
+  struct CoordsHash {
+    std::size_t operator()(Coords const& coords) const {
+      return std::hash<int>{}(coords.first) ^ std::hash<int>{}(coords.second);
+    }
+  };
+
+  struct CoordsEqual {
+    bool operator()(Coords const& lhs, Coords const& rhs) const {
+      return lhs.first == rhs.first && lhs.second == rhs.second;
+    }
+  };
+
+  using CoordsSet = std::unordered_set<Coords, CoordsHash, CoordsEqual>;
+
+  template <typename T>
+  using CoordsMap = std::unordered_map<Coords, T, CoordsHash, CoordsEqual>;
 
   enum class Direction { East, SouthEast, South, SouthWest, West, NorthWest, North, NorthEast };
 
@@ -106,10 +124,10 @@ namespace cpp_utils {
     }
     bool valid_index(Coords coords) const { return valid_index(coords.first, coords.second); }
 
-    Coords upper_left_corner() const { return {0, 0}; }
-    Coords upper_right_corner() const { return {0, num_columns_ - 1}; }
-    Coords lower_left_corner() const { return {num_rows_ - 1, 0}; }
-    Coords lower_right_corner() const { return {num_rows_ - 1, num_columns_ - 1}; }
+    Coords upper_left_corner() const { return Coords{0, 0}; }
+    Coords upper_right_corner() const { return Coords{0, num_columns_ - 1}; }
+    Coords lower_left_corner() const { return Coords{num_rows_ - 1, 0}; }
+    Coords lower_right_corner() const { return Coords{num_rows_ - 1, num_columns_ - 1}; }
 
     const Coords step_coords_towards_direction(Coords coords,
                                                Direction direction,
@@ -465,7 +483,7 @@ namespace cpp_utils {
       for (auto const [row, row_data] : std::views::enumerate(data)) {
         for (auto const [col, value] : std::views::enumerate(row_data)) {
           if (value != empty_element) {
-            data_[{row, col}] = value;
+            data_[Coords{row, col}] = value;
           }
         }
       }
@@ -516,7 +534,7 @@ namespace cpp_utils {
     }
 
    private:
-    std::map<Coords, T> data_;
+    CoordsMap<T> data_;
     T empty_element_;
     std::vector<Coords> cleanup_coords_;
   };
