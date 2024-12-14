@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cmath>
 #include <iterator>
+#include <map>
 #include <optional>
 #include <ranges>
 #include <span>
@@ -70,13 +71,14 @@ namespace cpp_utils {
     }
   }
 
+  // abstract base class for 2D arrays
   template <typename T>
-  class Array2D {
+  class Array2DBase {
    public:
     static constexpr Direction default_direction = Direction::East;
     static constexpr bool default_flatten = false;
 
-    using reference = std::vector<T>::reference;
+    // using reference = std::vector<T>::reference;
 
     // Exceptions
     class DiagonalFlattenNotImplemented : public std::logic_error {
@@ -86,31 +88,13 @@ namespace cpp_utils {
       }
     };
 
-    // Constructors
-    Array2D(int num_rows, int num_columns)
-        : num_rows_(num_rows),
-          num_columns_(num_columns),
-          data_(num_rows, std::vector<T>(num_columns)) {}
-    Array2D(std::vector<std::vector<T>> data)
-        : num_rows_(data.size()), num_columns_(data.at(0).size()), data_{std::move(data)} {
-      assert(std::all_of(data.begin(), data.end(),
-                         [this](auto const& row) { return row.size() == num_columns_; }));
-    }
-    Array2D(int num_rows, int num_columns, T const& value)
-        : num_rows_(num_rows),
-          num_columns_(num_columns),
-          data_(num_rows, std::vector<T>(num_columns, value)) {}
-    Array2D(int num_rows,
-            int num_columns,
-            std::span<const T> const& values,
-            Direction direction = default_direction)
-        : num_rows_(num_rows),
-          num_columns_(num_columns),
-          data_(num_rows, std::vector<T>(num_columns)) {
-      assert(values.size() == num_rows_ * num_columns_);
+    Array2DBase(int num_rows, int num_columns) : num_rows_(num_rows), num_columns_(num_columns) {}
 
-      std::ranges::transform(values, begin(direction), [](auto const& value) { return value; });
-    }
+    virtual T& operator()(int row, int col) = 0;
+    virtual T const& operator()(int row, int col) const = 0;
+
+    virtual T& operator()(Coords coords) = 0;
+    virtual T const& operator()(Coords coords) const = 0;
 
     size_t num_rows() const { return num_rows_; }
     size_t num_columns() const { return num_columns_; }
@@ -120,11 +104,10 @@ namespace cpp_utils {
     }
     bool valid_index(Coords coords) const { return valid_index(coords.first, coords.second); }
 
-    reference operator()(int row, int col) { return data_.at(row).at(col); }
-    reference operator()(Coords coords) { return (*this)(coords.first, coords.second); }
-
-    auto const& operator()(int row, int col) const { return data_.at(row).at(col); }
-    auto const& operator()(Coords coords) const { return (*this)(coords.first, coords.second); }
+    Coords upper_left_corner() const { return {0, 0}; }
+    Coords upper_right_corner() const { return {0, num_columns_ - 1}; }
+    Coords lower_left_corner() const { return {num_rows_ - 1, 0}; }
+    Coords lower_right_corner() const { return {num_rows_ - 1, num_columns_ - 1}; }
 
     const Coords step_coords_towards_direction(Coords coords,
                                                Direction direction,
@@ -190,9 +173,9 @@ namespace cpp_utils {
                                                     typename std::vector<T>::const_reference,
                                                     typename std::vector<T>::reference>;
       using container_reference =
-          typename std::conditional_t<IsConst, Array2D<T> const&, Array2D<T>&>;
+          typename std::conditional_t<IsConst, Array2DBase<T> const&, Array2DBase<T>&>;
       using container_pointer =
-          typename std::conditional_t<IsConst, Array2D<T> const*, Array2D<T>*>;
+          typename std::conditional_t<IsConst, Array2DBase<T> const*, Array2DBase<T>*>;
 
       MyIterator(container_reference array,
                  Coords starting_point,
@@ -269,11 +252,6 @@ namespace cpp_utils {
     using Iterator = MyIterator<false>;
     using ConstIterator = MyIterator<true>;
 
-    Coords upper_left_corner() const { return {0, 0}; }
-    Coords upper_right_corner() const { return {0, num_columns_ - 1}; }
-    Coords lower_left_corner() const { return {num_rows_ - 1, 0}; }
-    Coords lower_right_corner() const { return {num_rows_ - 1, num_columns_ - 1}; }
-
     Iterator begin(Direction direction = default_direction) {
       return Iterator(*this, flatten_begin_coords(direction), direction, true);
     }
@@ -291,9 +269,9 @@ namespace cpp_utils {
     template <bool IsConst>
     class MyRange {
       using container_reference =
-          typename std::conditional_t<IsConst, Array2D<T> const&, Array2D<T>&>;
+          typename std::conditional_t<IsConst, Array2DBase<T> const&, Array2DBase<T>&>;
       using container_pointer =
-          typename std::conditional_t<IsConst, Array2D<T> const*, Array2D<T>*>;
+          typename std::conditional_t<IsConst, Array2DBase<T> const*, Array2DBase<T>*>;
 
      public:
       MyRange(container_reference array, Coords start_coords, Direction direction, bool flatten)
@@ -426,7 +404,61 @@ namespace cpp_utils {
 
     int num_rows_;
     int num_columns_;
+  };
+
+  template <typename T>
+  class Array2D : virtual public Array2DBase<T> {
+    using base = Array2DBase<T>;
+
+   public:
+    // Constructors
+    Array2D(int num_rows, int num_columns)
+        : base(num_rows, num_columns), data_(num_rows, std::vector<T>(num_columns)) {}
+    Array2D(std::vector<std::vector<T>> data)
+        : base(data.size(), data.at(0).size()), data_{std::move(data)} {
+      assert(std::all_of(data.begin(), data.end(),
+                         [this](auto const& row) { return row.size() == base::num_columns(); }));
+    }
+    Array2D(int num_rows, int num_columns, T const& value)
+        : base(num_rows, num_columns), data_(num_rows, std::vector<T>(num_columns, value)) {}
+    Array2D(int num_rows,
+            int num_columns,
+            std::span<const T> const& values,
+            Direction direction = base::default_direction)
+        : base(num_rows, num_columns), data_(num_rows, std::vector<T>(num_columns)) {
+      assert(values.size() == base::num_rows() * base::num_columns());
+
+      std::ranges::transform(values, base::begin(direction),
+                             [](auto const& value) { return value; });
+    }
+
+    T& operator()(int row, int col) override { return data_.at(row).at(col); }
+    T const& operator()(int row, int col) const override { return data_.at(row).at(col); }
+    T& operator()(Coords coords) override { return (*this)(coords.first, coords.second); }
+    T const& operator()(Coords coords) const override {
+      return (*this)(coords.first, coords.second);
+    }
+
+   private:
     std::vector<std::vector<T>> data_;
+  };
+
+  template <typename T>
+  class SparseElementAdapter {
+   public:
+    SparseElementAdapter(T const& value) : value_(value) {}
+
+    operator T() const { return value_; }
+
+    // assignment
+    SparseElementAdapter& operator=(T const& value) {
+      value_ = value;
+      return *this;
+    }
+    bool operator==(SparseElementAdapter const& other) const { return value_ == other.value_; }
+
+   private:
+    T value_;
   };
 
 }  // namespace cpp_utils
