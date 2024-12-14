@@ -47,13 +47,59 @@ namespace {
     EXPECT_EQ(array(1, 2), 0);
   }
 
-  TEST(Array2DTest, IteratesEast) {
+  // Factory functions to create different derivatives of Array2DBase
+  // See https://github.com/google/googletest/blob/main/googletest/samples/sample6_unittest.cc
+  template <class C>
+  cpp_utils::Array2DBase<int>* CreateArray2DBase();
+
+  template <>
+  cpp_utils::Array2DBase<int>* CreateArray2DBase<cpp_utils::Array2D<int>>() {
     auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    cpp_utils::Array2D<int> const array(2, 3, vec);
-    // The array looks like this:
-    // 1 2 3
-    // 4 5 6
-    auto range = array.range_from(array.upper_left_corner());
+    return new cpp_utils::Array2D<int>(2, 3, vec);
+  }
+
+  template <>
+  cpp_utils::Array2DBase<int>* CreateArray2DBase<cpp_utils::SparseArray2D<int>>() {
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    return new cpp_utils::SparseArray2D<int>(2, 3, vec, 0);
+  }
+
+  template <class C>
+  cpp_utils::Array2DBase<int>* CreateEmptyArray2DBase();
+
+  template <>
+  cpp_utils::Array2DBase<int>* CreateEmptyArray2DBase<cpp_utils::Array2D<int>>() {
+    return new cpp_utils::Array2D<int>(0, 0);
+  }
+
+  template <>
+  cpp_utils::Array2DBase<int>* CreateEmptyArray2DBase<cpp_utils::SparseArray2D<int>>() {
+    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+    return new cpp_utils::SparseArray2D<int>(0, 0, 0);
+  }
+
+  // Then we define a test fixture class template.
+  template <class C>
+  class Array2DBaseTest : public testing::Test {
+   protected:
+    // The creator calls the factory function to create a prime table
+    // implemented by T.
+    Array2DBaseTest() : array_(CreateArray2DBase<C>()), empty_array_(CreateEmptyArray2DBase<C>()) {}
+
+    ~Array2DBaseTest() override { delete array_; }
+
+    // Test
+    cpp_utils::Array2DBase<int>* const array_;
+    cpp_utils::Array2DBase<int>* const empty_array_;
+  };
+
+  using testing::Types;
+  typedef Types<cpp_utils::Array2D<int>, cpp_utils::SparseArray2D<int>> Implementations;
+
+  TYPED_TEST_SUITE(Array2DBaseTest, Implementations);
+
+  TYPED_TEST(Array2DBaseTest, IteratesEast) {
+    auto range = this->array_->range_from(this->array_->upper_left_corner());
     auto it = range.begin();
     EXPECT_EQ(*it, 1);
     ++it;
@@ -65,10 +111,8 @@ namespace {
     EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
-  TEST(Array2DTest, IteratesPartialRange) {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    cpp_utils::Array2D<int> const array(2, 3, vec);
-    auto range = array.range_from({0, 1});
+  TYPED_TEST(Array2DBaseTest, IteratesPartialRange) {
+    auto range = this->array_->range_from({0, 1});
     auto it = range.begin();
     EXPECT_EQ(*it, 2);
     ++it;
@@ -78,10 +122,8 @@ namespace {
     EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
-  TEST(Array2DTest, IteratesPartialRangeEndMinusOne) {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    cpp_utils::Array2D<int> const array(2, 3, vec);
-    auto range = array.range_from(array.upper_left_corner());
+  TYPED_TEST(Array2DBaseTest, IteratesPartialRangeEndMinusOne) {
+    auto range = this->array_->range_from(this->array_->upper_left_corner());
     auto it = range.begin();
     EXPECT_EQ(*it, 1);
     ++it;
@@ -90,13 +132,9 @@ namespace {
     EXPECT_EQ(it, range.end() - 1);
   }
 
-  TEST(Array2DTest, IteratesSouthEast) {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    cpp_utils::Array2D<int> const array(2, 3, vec);
-    // The array looks like this:
-    // 1 2 3
-    // 4 5 6
-    auto range = array.range_from(array.upper_left_corner(), cpp_utils::Direction::SouthEast);
+  TYPED_TEST(Array2DBaseTest, IteratesSouthEast) {
+    auto range = this->array_->range_from(this->array_->upper_left_corner(),
+                                          cpp_utils::Direction::SouthEast);
     auto it = range.begin();
     EXPECT_EQ(*it, 1);
     ++it;
@@ -106,13 +144,9 @@ namespace {
     EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
-  TEST(Array2DTest, IteratesSouth) {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    cpp_utils::Array2D<int> const array(2, 3, vec);
-    // The array looks like this:
-    // 1 2 3
-    // 4 5 6
-    auto range = array.range_from(array.upper_left_corner(), cpp_utils::Direction::South);
+  TYPED_TEST(Array2DBaseTest, IteratesSouth) {
+    auto range =
+        this->array_->range_from(this->array_->upper_left_corner(), cpp_utils::Direction::South);
     auto it = range.begin();
     EXPECT_EQ(*it, 1);
     ++it;
@@ -122,13 +156,9 @@ namespace {
     EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
-  TEST(Array2DTest, IteratesSouthWest) {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    cpp_utils::Array2D<int> const array(2, 3, vec);
-    // The array looks like this:
-    // 1 2 3
-    // 4 5 6
-    auto range = array.range_from(array.upper_right_corner(), cpp_utils::Direction::SouthWest);
+  TYPED_TEST(Array2DBaseTest, IteratesSouthWest) {
+    auto range = this->array_->range_from(this->array_->upper_right_corner(),
+                                          cpp_utils::Direction::SouthWest);
     auto it = range.begin();
     EXPECT_EQ(*it, 3);
     ++it;
@@ -138,13 +168,9 @@ namespace {
     EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
-  TEST(Array2DTest, IteratesWest) {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    cpp_utils::Array2D<int> const array(2, 3, vec);
-    // The array looks like this:
-    // 1 2 3
-    // 4 5 6
-    auto range = array.range_from(array.upper_right_corner(), cpp_utils::Direction::West);
+  TYPED_TEST(Array2DBaseTest, IteratesWest) {
+    auto range =
+        this->array_->range_from(this->array_->upper_right_corner(), cpp_utils::Direction::West);
     auto it = range.begin();
     EXPECT_EQ(*it, 3);
     ++it;
@@ -156,13 +182,9 @@ namespace {
     EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
-  TEST(Array2DTest, IteratesNorthWest) {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    cpp_utils::Array2D<int> const array(2, 3, vec);
-    // The array looks like this:
-    // 1 2 3
-    // 4 5 6
-    auto range = array.range_from(array.lower_right_corner(), cpp_utils::Direction::NorthWest);
+  TYPED_TEST(Array2DBaseTest, IteratesNorthWest) {
+    auto range = this->array_->range_from(this->array_->lower_right_corner(),
+                                          cpp_utils::Direction::NorthWest);
     auto it = range.begin();
     EXPECT_EQ(*it, 6);
     ++it;
@@ -172,13 +194,9 @@ namespace {
     EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
-  TEST(Array2DTest, IteratesNorth) {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    cpp_utils::Array2D<int> const array(2, 3, vec);
-    // The array looks like this:
-    // 1 2 3
-    // 4 5 6
-    auto range = array.range_from(array.lower_left_corner(), cpp_utils::Direction::North);
+  TYPED_TEST(Array2DBaseTest, IteratesNorth) {
+    auto range =
+        this->array_->range_from(this->array_->lower_left_corner(), cpp_utils::Direction::North);
     auto it = range.begin();
     EXPECT_EQ(*it, 4);
     ++it;
@@ -188,13 +206,9 @@ namespace {
     EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
-  TEST(Array2DTest, IteratesNorthEast) {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    cpp_utils::Array2D<int> const array(2, 3, vec);
-    // The array looks like this:
-    // 1 2 3
-    // 4 5 6
-    auto range = array.range_from(array.lower_left_corner(), cpp_utils::Direction::NorthEast);
+  TYPED_TEST(Array2DBaseTest, IteratesNorthEast) {
+    auto range = this->array_->range_from(this->array_->lower_left_corner(),
+                                          cpp_utils::Direction::NorthEast);
     auto it = range.begin();
     EXPECT_EQ(*it, 4);
     ++it;
@@ -204,13 +218,8 @@ namespace {
     EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
-  TEST(Array2DTest, IteratesDefaultFlatten) {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    cpp_utils::Array2D<int> const array(2, 3, vec);
-    // The array looks like this:
-    // 1 2 3
-    // 4 5 6
-    auto it = array.begin();
+  TYPED_TEST(Array2DBaseTest, IteratesDefaultFlatten) {
+    auto it = this->array_->begin();
     EXPECT_EQ(*it, 1);
     ++it;
     EXPECT_EQ(*it, 2);
@@ -223,18 +232,13 @@ namespace {
     ++it;
     EXPECT_EQ(*it, 6);
     ++it;
-    EXPECT_EQ(it, array.end());
+    EXPECT_EQ(it, this->array_->end());
     EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
-  TEST(Array2DTest, IteratesSouthFlat) {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    cpp_utils::Array2D<int> const array(2, 3, vec);
-    // The array looks like this:
-    // 1 2 3
-    // 4 5 6
+  TYPED_TEST(Array2DBaseTest, IteratesSouthFlat) {
     constexpr auto dir = cpp_utils::Direction::South;
-    auto it = array.begin(dir);
+    auto it = this->array_->begin(dir);
     EXPECT_EQ(*it, 1);
     ++it;
     EXPECT_EQ(*it, 4);
@@ -247,18 +251,13 @@ namespace {
     ++it;
     EXPECT_EQ(*it, 6);
     ++it;
-    EXPECT_EQ(it, array.end(dir));
+    EXPECT_EQ(it, this->array_->end(dir));
     EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
-  TEST(Array2DTest, IteratesWestFlat) {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    cpp_utils::Array2D<int> const array(2, 3, vec);
-    // The array looks like this:
-    // 1 2 3
-    // 4 5 6
+  TYPED_TEST(Array2DBaseTest, IteratesWestFlat) {
     constexpr auto dir = cpp_utils::Direction::West;
-    auto it = array.begin(dir);
+    auto it = this->array_->begin(dir);
     EXPECT_EQ(*it, 6);
     ++it;
     EXPECT_EQ(*it, 5);
@@ -271,18 +270,13 @@ namespace {
     ++it;
     EXPECT_EQ(*it, 1);
     ++it;
-    EXPECT_EQ(it, array.end(dir));
+    EXPECT_EQ(it, this->array_->end(dir));
     EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
-  TEST(Array2DTest, IteratesNorthFlat) {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    cpp_utils::Array2D<int> const array(2, 3, vec);
-    // The array looks like this:
-    // 1 2 3
-    // 4 5 6
+  TYPED_TEST(Array2DBaseTest, IteratesNorthFlat) {
     constexpr auto dir = cpp_utils::Direction::North;
-    auto it = array.begin(dir);
+    auto it = this->array_->begin(dir);
     EXPECT_EQ(*it, 6);
     ++it;
     EXPECT_EQ(*it, 3);
@@ -295,14 +289,12 @@ namespace {
     ++it;
     EXPECT_EQ(*it, 1);
     ++it;
-    EXPECT_EQ(it, array.end(dir));
+    EXPECT_EQ(it, this->array_->end(dir));
     EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
-  TEST(Array2DTest, IteratesBackwards) {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    cpp_utils::Array2D<int> array(2, 3, vec);
-    auto it = array.end();
+  TYPED_TEST(Array2DBaseTest, IteratesBackwards) {
+    auto it = this->array_->end();
     --it;
     EXPECT_EQ(*it, 6);
     --it;
@@ -315,33 +307,25 @@ namespace {
     EXPECT_EQ(*it, 2);
     --it;
     EXPECT_EQ(*it, 1);
-    EXPECT_EQ(it, array.begin());
+    EXPECT_EQ(it, this->array_->begin());
     --it;
     EXPECT_EQ(it, cpp_utils::Sentinel());
   }
 
-  TEST(Array2DTest, MutableIterator) {
-    auto vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    cpp_utils::Array2D<int> array(2, 3, vec);
-    auto it = array.begin();
+  TYPED_TEST(Array2DBaseTest, MutableIterator) {
+    auto it = this->array_->begin();
     *it = 10;
-    EXPECT_EQ(array(0, 0), 10);
+    EXPECT_EQ((*this->array_)(0, 0), 10);
   }
 
-  TEST(Array2DTest, Format) {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    cpp_utils::Array2D<int> const array(2, 3, vec);
-    // The array looks like this:
-    // 1 2 3
-    // 4 5 6
-    std::string expected = "Array2D(2x3)\n1 2 3\n4 5 6\n";
-    EXPECT_EQ(fmt::format("{}", array), expected);
+  TYPED_TEST(Array2DBaseTest, Format) {
+    std::string expected = "Array2DBase(2x3)\n1 2 3\n4 5 6\n";
+    EXPECT_EQ(fmt::format("{}", *(this->array_)), expected);
   }
 
-  TEST(Array2DTest, FormatEmpty) {
-    cpp_utils::Array2D<int> const array(0, 0);
-    std::string expected = "Array2D(0x0)\n";
-    EXPECT_EQ(fmt::format("{}", array), expected);
+  TYPED_TEST(Array2DBaseTest, FormatEmpty) {
+    std::string expected = "Array2DBase(0x0)\n";
+    EXPECT_EQ(fmt::format("{}", *(this->empty_array_)), expected);
   }
 
 }  // namespace

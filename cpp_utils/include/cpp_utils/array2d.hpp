@@ -71,14 +71,15 @@ namespace cpp_utils {
     }
   }
 
-  // abstract base class for 2D arrays
+  // Abstract base class for 2D arrays
   template <typename T>
   class Array2DBase {
    public:
     static constexpr Direction default_direction = Direction::East;
     static constexpr bool default_flatten = false;
 
-    // using reference = std::vector<T>::reference;
+    using reference = typename std::vector<T>::reference;
+    using const_reference = typename std::vector<T>::const_reference;
 
     // Exceptions
     class DiagonalFlattenNotImplemented : public std::logic_error {
@@ -89,12 +90,13 @@ namespace cpp_utils {
     };
 
     Array2DBase(int num_rows, int num_columns) : num_rows_(num_rows), num_columns_(num_columns) {}
+    virtual ~Array2DBase() = default;
 
-    virtual T& operator()(int row, int col) = 0;
-    virtual T const& operator()(int row, int col) const = 0;
+    virtual reference operator()(int row, int col) = 0;
+    virtual const_reference operator()(int row, int col) const = 0;
 
-    virtual T& operator()(Coords coords) = 0;
-    virtual T const& operator()(Coords coords) const = 0;
+    virtual reference operator()(Coords coords) = 0;
+    virtual const_reference operator()(Coords coords) const = 0;
 
     size_t num_rows() const { return num_rows_; }
     size_t num_columns() const { return num_columns_; }
@@ -159,6 +161,8 @@ namespace cpp_utils {
           --result.first;
           ++result.second;
           break;
+        default:
+          throw std::invalid_argument("Invalid direction");
       }
       return result;
     }
@@ -407,7 +411,7 @@ namespace cpp_utils {
   };
 
   template <typename T>
-  class Array2D : virtual public Array2DBase<T> {
+  class Array2D : public Array2DBase<T> {
     using base = Array2DBase<T>;
 
    public:
@@ -432,10 +436,15 @@ namespace cpp_utils {
                              [](auto const& value) { return value; });
     }
 
-    T& operator()(int row, int col) override { return data_.at(row).at(col); }
-    T const& operator()(int row, int col) const override { return data_.at(row).at(col); }
-    T& operator()(Coords coords) override { return (*this)(coords.first, coords.second); }
-    T const& operator()(Coords coords) const override {
+    typename base::reference operator()(int row, int col) override { return data_.at(row).at(col); }
+    typename base::const_reference operator()(int row, int col) const override {
+      return data_.at(row).at(col);
+    }
+
+    typename base::reference operator()(Coords coords) override {
+      return (*this)(coords.first, coords.second);
+    }
+    typename base::const_reference operator()(Coords coords) const override {
       return (*this)(coords.first, coords.second);
     }
 
@@ -444,34 +453,80 @@ namespace cpp_utils {
   };
 
   template <typename T>
-  class SparseElementAdapter {
+  class SparseArray2D : virtual public Array2DBase<T> {
+    using base = Array2DBase<T>;
+
    public:
-    SparseElementAdapter(T const& value) : value_(value) {}
-
-    operator T() const { return value_; }
-
-    // assignment
-    SparseElementAdapter& operator=(T const& value) {
-      value_ = value;
-      return *this;
+    // Constructors
+    SparseArray2D(int num_rows, int num_columns, T empty_element)
+        : base(num_rows, num_columns), empty_element_(empty_element) {}
+    SparseArray2D(std::vector<std::vector<T>> data, T empty_element)
+        : base(data.size(), data.at(0).size()), empty_element_(empty_element) {
+      for (auto const [row, row_data] : std::views::enumerate(data)) {
+        for (auto const [col, value] : std::views::enumerate(row_data)) {
+          if (value != empty_element) {
+            data_[{row, col}] = value;
+          }
+        }
+      }
     }
-    bool operator==(SparseElementAdapter const& other) const { return value_ == other.value_; }
+    SparseArray2D(int num_rows,
+                  int num_columns,
+                  std::span<const T> const& values,
+                  T empty_element,
+                  Direction direction = base::default_direction)
+        : base(num_rows, num_columns), empty_element_(empty_element) {
+      assert(values.size() == base::num_rows() * base::num_columns());
+
+      std::ranges::transform(values, base::begin(direction),
+                             [](auto const& value) { return value; });
+    }
+
+    T& operator()(int row, int col) override {
+      if (data_.find({row, col}) == data_.end()) {
+        data_[{row, col}] = empty_element_;
+      }
+      return data_[{row, col}];
+    }
+    T const& operator()(int row, int col) const override {
+      if (data_.find({row, col}) == data_.end()) {
+        return empty_element_;
+      }
+      return data_.at({row, col});
+    }
+    T& operator()(Coords coords) override { return (*this)(coords.first, coords.second); }
+    T const& operator()(Coords coords) const override {
+      return (*this)(coords.first, coords.second);
+    }
+
+    T const& empty_element() const { return empty_element_; }
+
+    size_t size() const { return data_.size(); }
 
    private:
-    T value_;
+    std::map<Coords, T> data_;
+    T empty_element_;
   };
 
 }  // namespace cpp_utils
 
-// Custom formatter for Array2D<T>
+// Helper trait to check if a type is derived from Array2DBase
 template <typename T>
-struct fmt::formatter<cpp_utils::Array2D<T>> {
-  constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
+struct is_array2d_base : std::false_type {};
 
+template <typename T>
+struct is_array2d_base<cpp_utils::Array2DBase<T>> : std::true_type {};
+
+template <typename T>
+inline constexpr bool is_array2d_base_v = is_array2d_base<T>::value;
+
+// Common formatter for classes derived from Array2DBase<T>
+template <typename T>
+struct array2d_formatter {
   template <typename FormatContext>
-  auto format(cpp_utils::Array2D<T> const& array, FormatContext& ctx) -> decltype(ctx.out()) const {
+  auto format(const T& array, FormatContext& ctx) const -> decltype(ctx.out()) {
     auto result =
-        fmt::format_to(ctx.out(), "Array2D({}x{})\n", array.num_rows(), array.num_columns());
+        fmt::format_to(ctx.out(), "Array2DBase({}x{})\n", array.num_rows(), array.num_columns());
     for (int row = 0; row < array.num_rows(); ++row) {
       auto row_range = array.range_from({row, 0});
       result = fmt::format_to(ctx.out(), "{}", fmt::join(row_range, " "));
@@ -479,4 +534,23 @@ struct fmt::formatter<cpp_utils::Array2D<T>> {
     }
     return result;
   }
+};
+
+// Custom formatter for Array2DBase<T>
+template <typename T>
+struct fmt::formatter<cpp_utils::Array2DBase<T>> : array2d_formatter<cpp_utils::Array2DBase<T>> {
+  constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
+};
+
+// Custom formatter for Array2D<T>
+template <typename T>
+struct fmt::formatter<cpp_utils::Array2D<T>> : array2d_formatter<cpp_utils::Array2D<T>> {
+  constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
+};
+
+// Custom formatter for SparseArray2D<T>
+template <typename T>
+struct fmt::formatter<cpp_utils::SparseArray2D<T>>
+    : array2d_formatter<cpp_utils::SparseArray2D<T>> {
+  constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
 };
