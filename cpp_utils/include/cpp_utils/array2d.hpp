@@ -502,17 +502,19 @@ namespace cpp_utils {
 
     T& operator()(int row, int col) override {
       cleanup();
-      auto [_, inserted] = data_.emplace(Coords{row, col}, empty_element_);
+      auto coords = Coords{row, col};
+      auto [_, inserted] = data_.emplace(coords, empty_element_);
       if (inserted) {
-        cleanup_coords_.push_back(Coords{row, col});
+        cleanup_coords_ = coords;
       }
-      return data_[Coords{row, col}];
+      return data_[coords];
     }
     T const& operator()(int row, int col) const override {
-      if (!data_.contains(Coords{row, col})) {
+      auto coords = Coords{row, col};
+      if (!data_.contains(coords)) {
         return empty_element_;
       }
-      return data_.at(Coords{row, col});
+      return data_.at(coords);
     }
     T& operator()(Coords coords) override { return (*this)(coords.first, coords.second); }
     T const& operator()(Coords coords) const override {
@@ -524,18 +526,17 @@ namespace cpp_utils {
     size_t size() const { return data_.size(); }
 
     void cleanup() {
-      for (auto const& coords : cleanup_coords_) {
-        if (data_.at(coords) == empty_element_) {
-          data_.erase(coords);
-        }
+      if (cleanup_coords_.has_value() && data_.contains(*cleanup_coords_) &&
+          data_.at(*cleanup_coords_) == empty_element_) {
+        data_.erase(*cleanup_coords_);
       }
-      cleanup_coords_.clear();
+      cleanup_coords_.reset();
     }
 
    private:
     CoordsMap<T> data_;
     T empty_element_;
-    std::vector<Coords> cleanup_coords_;
+    std::optional<Coords> cleanup_coords_;
   };
 
 }  // namespace cpp_utils
