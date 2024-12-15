@@ -506,13 +506,13 @@ namespace cpp_utils {
       if (inserted) {
         cleanup_coords_.push_back(Coords{row, col});
       }
-      return data_[{row, col}];
+      return data_[Coords{row, col}];
     }
     T const& operator()(int row, int col) const override {
-      if (!data_.contains({row, col})) {
+      if (!data_.contains(Coords{row, col})) {
         return empty_element_;
       }
-      return data_.at({row, col});
+      return data_.at(Coords{row, col});
     }
     T& operator()(Coords coords) override { return (*this)(coords.first, coords.second); }
     T const& operator()(Coords coords) const override {
