@@ -502,15 +502,14 @@ namespace cpp_utils {
 
     T& operator()(int row, int col) override {
       cleanup();
-      if (data_.find({row, col}) == data_.end()) {
-        data_[{row, col}] = empty_element_;
-        // remember to clean up the data next time we access it
-        cleanup_coords_.push_back({row, col});
+      auto [_, inserted] = data_.emplace(Coords{row, col}, empty_element_);
+      if (inserted) {
+        cleanup_coords_.push_back(Coords{row, col});
       }
       return data_[{row, col}];
     }
     T const& operator()(int row, int col) const override {
-      if (data_.find({row, col}) == data_.end()) {
+      if (!data_.contains({row, col})) {
         return empty_element_;
       }
       return data_.at({row, col});
