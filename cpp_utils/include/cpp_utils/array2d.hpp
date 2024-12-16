@@ -1,16 +1,20 @@
 #pragma once
 
+#include <cpp_utils/input.hpp>
 #include <fmt/core.h>
 #include <fmt/format.h>
 
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <cstdint>
+#include <functional>
 #include <iterator>
 #include <optional>
 #include <ranges>
 #include <span>
 #include <stdexcept>
+#include <string>
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
@@ -107,7 +111,8 @@ namespace cpp_utils {
       }
     };
 
-    Array2DBase(int num_rows, int num_columns) : num_rows_(num_rows), num_columns_(num_columns) {}
+    Array2DBase(size_t num_rows, size_t num_columns)
+        : num_rows_(num_rows), num_columns_(num_columns) {}
     virtual ~Array2DBase() = default;
 
     virtual reference operator()(int row, int col) = 0;
@@ -424,8 +429,8 @@ namespace cpp_utils {
       return result;
     }
 
-    int num_rows_;
-    int num_columns_;
+    size_t num_rows_;
+    size_t num_columns_;
   };
 
   template <typename T>
@@ -434,17 +439,17 @@ namespace cpp_utils {
 
    public:
     // Constructors
-    Array2D(int num_rows, int num_columns)
+    Array2D(size_t num_rows, size_t num_columns)
         : base(num_rows, num_columns), data_(num_rows, std::vector<T>(num_columns)) {}
     Array2D(std::vector<std::vector<T>> data)
         : base(data.size(), data.at(0).size()), data_{std::move(data)} {
       assert(std::all_of(data.begin(), data.end(),
                          [this](auto const& row) { return row.size() == base::num_columns(); }));
     }
-    Array2D(int num_rows, int num_columns, T const& value)
+    Array2D(size_t num_rows, size_t num_columns, T const& value)
         : base(num_rows, num_columns), data_(num_rows, std::vector<T>(num_columns, value)) {}
-    Array2D(int num_rows,
-            int num_columns,
+    Array2D(size_t num_rows,
+            size_t num_columns,
             std::span<const T> const& values,
             Direction direction = base::default_direction)
         : base(num_rows, num_columns), data_(num_rows, std::vector<T>(num_columns)) {
@@ -476,7 +481,7 @@ namespace cpp_utils {
 
    public:
     // Constructors
-    SparseArray2D(int num_rows, int num_columns, T empty_element)
+    SparseArray2D(size_t num_rows, size_t num_columns, T empty_element)
         : base(num_rows, num_columns), empty_element_(empty_element) {}
     SparseArray2D(std::vector<std::vector<T>> data, T empty_element)
         : base(data.size(), data.at(0).size()), empty_element_(empty_element) {
@@ -540,6 +545,67 @@ namespace cpp_utils {
     T empty_element_;
     std::optional<Coords> cleanup_coords_;
   };
+
+  // Builders for Array2D and SparseArray2D
+  template <typename T>
+  class Array2DBuilder {
+   public:
+    static const std::function<T(std::string)> default_converter;
+
+    static Array2D<T> create_from_string(
+        std::string input,
+        std::string row_separator = "\n",
+        std::string column_separator = " ",
+        std::function<T(std::string)> converter = default_converter) {
+      auto const vec =
+          get_elements_from_input(std::move(input), row_separator, column_separator, converter);
+      return Array2D<T>(std::move(vec));
+    }
+
+    static SparseArray2D<T> create_sparse_from_string(
+        std::string input,
+        T empty_element,
+        std::string row_separator = "\n",
+        std::string column_separator = " ",
+        std::function<T(std::string)> converter = default_converter) {
+      auto const vec =
+          get_elements_from_input(std::move(input), row_separator, column_separator, converter);
+      return SparseArray2D<T>(std::move(vec), empty_element);
+    }
+
+   private:
+    static std::vector<std::vector<T>> get_elements_from_input(
+        std::string input,
+        std::string row_separator,
+        std::string column_separator,
+        std::function<T(std::string)> converter) {
+      auto lines = cpp_utils::split_string(input, row_separator);
+      std::vector<std::vector<T>> result;
+      std::ranges::transform(
+          lines | std::views::filter([](auto const& line) { return !line.empty(); }),
+          std::back_inserter(result), [column_separator, converter](std::string const& line) {
+            std::vector<T> row;
+            if (column_separator.empty()) {
+              std::transform(line.begin(), line.end(), std::back_inserter(row),
+                             [converter](char c) { return converter(std::string(1, c)); });
+            } else {
+              auto elements = cpp_utils::split_string(line, column_separator);
+              std::ranges::transform(elements, std::back_inserter(row), converter);
+            }
+            return row;
+          });
+      return result;
+    }
+  };
+
+  // Define the static member outside the class
+  template <typename T>
+  const std::function<T(std::string)> Array2DBuilder<T>::default_converter =
+      [](std::string s) { return static_cast<T>(std::stoll(s)); };
+
+  template <>
+  const std::function<char(std::string)> Array2DBuilder<char>::default_converter =
+      [](std::string s) { return static_cast<char>(s[0]); };
 
 }  // namespace cpp_utils
 

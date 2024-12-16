@@ -26,7 +26,7 @@ namespace cpp_utils {
     return buffer.str();
   }
 
-  std::vector<std::string> split(std::string const& str, std::string const& delimiter) {
+  std::vector<std::string> split_string(std::string const& str, std::string const& delimiter) {
     std::vector<std::string> parts;
     size_t start = 0;
     size_t end = str.find(delimiter);
@@ -40,4 +40,9 @@ namespace cpp_utils {
     parts.push_back(str.substr(start, end));
     return parts;
   }
+
+  std::vector<std::string> split_string(std::string const& str, char delimiter) {
+    return split_string(str, std::string(1, delimiter));
+  }
+
 }  // namespace cpp_utils

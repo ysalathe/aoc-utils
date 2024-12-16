@@ -11,16 +11,16 @@ namespace {
   template <class C>
   cpp_utils::Array2DBase<int>* CreateArray2DBase();
 
+  auto const default_test_vec = std::vector<int>{1, 2, 3, 4, 5, 6};
+
   template <>
   cpp_utils::Array2DBase<int>* CreateArray2DBase<cpp_utils::Array2D<int>>() {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    return new cpp_utils::Array2D<int>(2, 3, vec);
+    return new cpp_utils::Array2D<int>(2, 3, default_test_vec);
   }
 
   template <>
   cpp_utils::Array2DBase<int>* CreateArray2DBase<cpp_utils::SparseArray2D<int>>() {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
-    return new cpp_utils::SparseArray2D<int>(2, 3, vec, 0);
+    return new cpp_utils::SparseArray2D<int>(2, 3, default_test_vec, 0);
   }
 
   template <class C>
@@ -33,7 +33,6 @@ namespace {
 
   template <>
   cpp_utils::Array2DBase<int>* CreateEmptyArray2DBase<cpp_utils::SparseArray2D<int>>() {
-    auto const vec = std::vector<int>{1, 2, 3, 4, 5, 6};
     return new cpp_utils::SparseArray2D<int>(0, 0, 0);
   }
 
@@ -411,6 +410,81 @@ namespace {
     EXPECT_EQ(array(1, 0), 3);
     EXPECT_EQ(array(1, 1), 3);
     EXPECT_EQ(array(1, 2), 3);
+  }
+
+  // Builder tests
+  TEST(Array2DBuilderTest, CreateArray2DFromString) {
+    auto const input = std::string("1 2 3\n4 5 6\n");
+    auto const array = cpp_utils::Array2DBuilder<int>::create_from_string(input);
+    // The array looks like this:
+    // 1 2 3
+    // 4 5 6
+    EXPECT_EQ(array(0, 0), 1);
+    EXPECT_EQ(array(0, 1), 2);
+    EXPECT_EQ(array(0, 2), 3);
+    EXPECT_EQ(array(1, 0), 4);
+    EXPECT_EQ(array(1, 1), 5);
+    EXPECT_EQ(array(1, 2), 6);
+  }
+
+  // Builder tests
+  TEST(Array2DBuilderTest, CreateSparseArray2DFromString) {
+    auto const input = std::string("1 2 3\n4 5 6\n");
+    auto const array = cpp_utils::Array2DBuilder<int>::create_sparse_from_string(input, 0);
+    // The array looks like this:
+    // 1 2 3
+    // 4 5 6
+    EXPECT_EQ(array(0, 0), 1);
+    EXPECT_EQ(array(0, 1), 2);
+    EXPECT_EQ(array(0, 2), 3);
+    EXPECT_EQ(array(1, 0), 4);
+    EXPECT_EQ(array(1, 1), 5);
+    EXPECT_EQ(array(1, 2), 6);
+    EXPECT_EQ(array.size(), 6);
+  }
+
+  TEST(Array2DBuilderTest, CreateSparseArray2DFromStringEmptyColumnSeparator) {
+    auto const input = std::string("123\n456\n");
+    auto const array =
+        cpp_utils::Array2DBuilder<int>::create_sparse_from_string(input, 0, "\n", "");
+    // The array looks like this:
+    // 123
+    // 456
+    EXPECT_EQ(array(0, 0), 1);
+    EXPECT_EQ(array(0, 1), 2);
+    EXPECT_EQ(array(0, 2), 3);
+    EXPECT_EQ(array(1, 0), 4);
+    EXPECT_EQ(array(1, 1), 5);
+    EXPECT_EQ(array(1, 2), 6);
+    EXPECT_EQ(array.size(), 6);
+  }
+
+  TEST(Array2DBuilderTest, CreateArray2DChar) {
+    auto const input = std::string("a b c\nd e f\n");
+    auto const array = cpp_utils::Array2DBuilder<char>::create_from_string(input);
+    // The array looks like this:
+    // a b c
+    // d e f
+    EXPECT_EQ(array(0, 0), 'a');
+    EXPECT_EQ(array(0, 1), 'b');
+    EXPECT_EQ(array(0, 2), 'c');
+    EXPECT_EQ(array(1, 0), 'd');
+    EXPECT_EQ(array(1, 1), 'e');
+    EXPECT_EQ(array(1, 2), 'f');
+  }
+
+  TEST(Array2DBuilderTest, CreateArray2DCharEmptyColumnSeparator) {
+    auto const input = std::string("abc\ndef\n");
+    auto const array = cpp_utils::Array2DBuilder<char>::create_from_string(input, "\n", "");
+    // The array looks like this:
+    // abc
+    // def
+    EXPECT_EQ(array(0, 0), 'a');
+    EXPECT_EQ(array(0, 1), 'b');
+    EXPECT_EQ(array(0, 2), 'c');
+    EXPECT_EQ(array(1, 0), 'd');
+    EXPECT_EQ(array(1, 1), 'e');
+    EXPECT_EQ(array(1, 2), 'f');
   }
 
 }  // namespace
