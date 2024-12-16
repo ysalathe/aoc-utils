@@ -305,8 +305,8 @@ namespace {
   TEST(Array2DTest, Handles2DArrayWithDefaultValues) {
     cpp_utils::Array2D<int> const array(2, 3, 0);
     // The array looks like this:
-    // 1 2 3
-    // 4 5 6
+    // 0 0 0
+    // 0 0 0
     EXPECT_EQ(array(0, 0), 0);
     EXPECT_EQ(array(0, 1), 0);
     EXPECT_EQ(array(0, 2), 0);
@@ -334,8 +334,8 @@ namespace {
     cpp_utils::SparseArray2D<int> const array(2, 3, 0);
     EXPECT_EQ(array.empty_element(), 0);
     // The array looks like this:
-    // 1 2 3
-    // 4 5 6
+    // 0 0 0
+    // 0 0 0
     EXPECT_EQ(array(0, 0), 0);
     EXPECT_EQ(array(0, 1), 0);
     EXPECT_EQ(array(0, 2), 0);
@@ -350,8 +350,8 @@ namespace {
     array(1, 1) = 1;
     EXPECT_EQ(array.empty_element(), 0);
     // The array looks like this:
-    // 1 2 3
-    // 4 5 6
+    // 0 0 0
+    // 0 1 0
     EXPECT_EQ(std::as_const(array)(0, 0), 0);
     EXPECT_EQ(std::as_const(array)(0, 1), 0);
     EXPECT_EQ(std::as_const(array)(0, 2), 0);
@@ -361,13 +361,13 @@ namespace {
     EXPECT_EQ(array.size(), 1);
   }
 
-  TEST(SparseArray2DTest, CleanupWorks) {
+  TEST(SparseArray2DTest, CleanupWorksForEmptyArray) {
     cpp_utils::SparseArray2D<int> array(2, 3, 0);
     array(1, 1) = 1;
     EXPECT_EQ(array.empty_element(), 0);
     // The array looks like this:
-    // 1 2 3
-    // 4 5 6
+    // 0 0 0
+    // 0 1 0
     EXPECT_EQ(array(0, 0), 0);
     EXPECT_EQ(array(0, 1), 0);
     EXPECT_EQ(array(0, 2), 0);
@@ -376,6 +376,41 @@ namespace {
     EXPECT_EQ(array(1, 2), 0);
     array.cleanup();
     EXPECT_EQ(array.size(), 1);
+  }
+
+  TEST(SparseArray2DTest, CleanupWorks) {
+    cpp_utils::SparseArray2D<int> array(2, 3, 0);
+    array(1, 1) = 1;
+    EXPECT_EQ(array.empty_element(), 0);
+    // The array looks like this:
+    // 0 0 0
+    // 0 1 0
+    EXPECT_EQ(array(0, 0), 0);
+    EXPECT_EQ(array(0, 1), 0);
+    EXPECT_EQ(array(0, 2), 0);
+    EXPECT_EQ(array(1, 0), 0);
+    EXPECT_EQ(array(1, 1), 1);
+    EXPECT_EQ(array(1, 2), 0);
+    array.cleanup();
+    EXPECT_EQ(array.size(), 1);
+  }
+
+  TEST(SparseArray2DTest, CleanupWorksInConstructor) {
+    auto const vec = std::vector<int>{3, 3, 3, 3, 3, 3};
+    cpp_utils::SparseArray2D<int> array(2, 3, vec, 3);
+    EXPECT_EQ(array.empty_element(), 3);
+    // The array looks like this:
+    // 3 3 3
+    // 3 3 3
+
+    // since all elements are the empty element (3), we expect the size to be 0
+    EXPECT_EQ(array.size(), 0);
+    EXPECT_EQ(array(0, 0), 3);
+    EXPECT_EQ(array(0, 1), 3);
+    EXPECT_EQ(array(0, 2), 3);
+    EXPECT_EQ(array(1, 0), 3);
+    EXPECT_EQ(array(1, 1), 3);
+    EXPECT_EQ(array(1, 2), 3);
   }
 
 }  // namespace

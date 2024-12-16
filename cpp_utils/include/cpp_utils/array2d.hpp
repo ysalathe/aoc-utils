@@ -498,6 +498,8 @@ namespace cpp_utils {
 
       std::ranges::transform(values, base::begin(direction),
                              [](auto const& value) { return value; });
+      // make sure the array is cleaned up
+      cleanup();
     }
 
     T& operator()(int row, int col) override {
