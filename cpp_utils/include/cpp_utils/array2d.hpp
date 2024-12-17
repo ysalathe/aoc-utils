@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <functional>
 #include <iterator>
+#include <map>
 #include <optional>
 #include <ranges>
 #include <span>
@@ -40,10 +41,23 @@ namespace cpp_utils {
     }
   };
 
-  using CoordsSet = std::unordered_set<Coords, CoordsHash, CoordsEqual>;
+  struct CoordsCompare {
+    bool operator()(Coords const& lhs, Coords const& rhs) const {
+      if (lhs.first != rhs.first) {
+        return lhs.first < rhs.first;
+      } else {
+        return lhs.second < rhs.second;
+      }
+    }
+  };
+
+  using CoordsUnorderedSet = std::unordered_set<Coords, CoordsHash, CoordsEqual>;
 
   template <typename T>
-  using CoordsMap = std::unordered_map<Coords, T, CoordsHash, CoordsEqual>;
+  using CoordsUnorderedMap = std::unordered_map<Coords, T, CoordsHash, CoordsEqual>;
+
+  template <typename T>
+  using CoordsMap = std::map<Coords, T, CoordsCompare>;
 
   enum class Direction { East, SouthEast, South, SouthWest, West, NorthWest, North, NorthEast };
 
@@ -507,7 +521,7 @@ namespace cpp_utils {
       cleanup();
     }
 
-    T& operator()(int row, int col) override {
+    typename base::reference operator()(int row, int col) override {
       cleanup();
       auto coords = Coords{row, col};
       auto [_, inserted] = data_.emplace(coords, empty_element_);
@@ -516,21 +530,25 @@ namespace cpp_utils {
       }
       return data_[coords];
     }
-    T const& operator()(int row, int col) const override {
+    typename base::const_reference operator()(int row, int col) const override {
       auto coords = Coords{row, col};
       if (!data_.contains(coords)) {
         return empty_element_;
       }
       return data_.at(coords);
     }
-    T& operator()(Coords coords) override { return (*this)(coords.first, coords.second); }
-    T const& operator()(Coords coords) const override {
+    typename base::reference operator()(Coords coords) override {
+      return (*this)(coords.first, coords.second);
+    }
+    typename base::const_reference operator()(Coords coords) const override {
       return (*this)(coords.first, coords.second);
     }
 
-    T const& empty_element() const { return empty_element_; }
+    typename base::const_reference empty_element() const { return empty_element_; }
 
     size_t size() const { return data_.size(); }
+
+    auto keys() const { return data_ | std::views::keys; }
 
     void cleanup() {
       if (cleanup_coords_.has_value() && data_.contains(*cleanup_coords_) &&
