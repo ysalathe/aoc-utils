@@ -1,5 +1,6 @@
 // main.cpp
 #include "cpp_utils/array2d.hpp"
+#include "cpp_utils/array2d_formatter.hpp"
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>

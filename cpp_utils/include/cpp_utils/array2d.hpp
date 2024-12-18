@@ -1,8 +1,7 @@
 #pragma once
 
-#include <cpp_utils/input.hpp>
-#include <fmt/core.h>
-#include <fmt/format.h>
+#include "coords.hpp"
+#include "input.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -26,39 +25,6 @@
 namespace cpp_utils {
 
   struct Sentinel {};
-
-  using Coords = std::pair<int, int>;
-
-  struct CoordsHash {
-    std::size_t operator()(Coords const& coords) const {
-      return std::hash<int>{}(coords.first) ^ std::hash<int>{}(coords.second);
-    }
-  };
-
-  struct CoordsEqual {
-    bool operator()(Coords const& lhs, Coords const& rhs) const {
-      return lhs.first == rhs.first && lhs.second == rhs.second;
-    }
-  };
-
-  struct CoordsCompare {
-    bool operator()(Coords const& lhs, Coords const& rhs) const {
-      if (lhs.first != rhs.first) {
-        return lhs.first < rhs.first;
-      } else {
-        return lhs.second < rhs.second;
-      }
-    }
-  };
-
-  using CoordsUnorderedSet = std::unordered_set<Coords, CoordsHash, CoordsEqual>;
-
-  template <typename T>
-  using CoordsUnorderedMap = std::unordered_map<Coords, T, CoordsHash, CoordsEqual>;
-
-  template <typename T>
-  using CoordsMap = std::map<Coords, T, CoordsCompare>;
-
   enum class Direction { East, SouthEast, South, SouthWest, West, NorthWest, North, NorthEast };
 
   Direction reverse_direction(Direction direction) {
@@ -114,8 +80,8 @@ namespace cpp_utils {
     static constexpr Direction default_direction = Direction::East;
     static constexpr bool default_flatten = false;
 
-    using reference = typename std::vector<T>::reference;
-    using const_reference = typename std::vector<T>::const_reference;
+    using reference = T&;
+    using const_reference = T const&;
 
     // Exceptions
     class DiagonalFlattenNotImplemented : public std::logic_error {
@@ -548,7 +514,7 @@ namespace cpp_utils {
 
     size_t size() const { return data_.size(); }
 
-    auto keys() const { return data_ | std::views::keys; }
+    auto const& elements() const { return data_; }
 
     void cleanup() {
       if (cleanup_coords_.has_value() && data_.contains(*cleanup_coords_) &&
@@ -636,38 +602,3 @@ struct is_array2d_base<cpp_utils::Array2DBase<T>> : std::true_type {};
 
 template <typename T>
 inline constexpr bool is_array2d_base_v = is_array2d_base<T>::value;
-
-// Common formatter for classes derived from Array2DBase<T>
-template <typename T>
-struct array2d_formatter {
-  template <typename FormatContext>
-  auto format(const T& array, FormatContext& ctx) const -> decltype(ctx.out()) {
-    auto result =
-        fmt::format_to(ctx.out(), "Array2DBase({}x{})\n", array.num_rows(), array.num_columns());
-    for (int row = 0; row < array.num_rows(); ++row) {
-      auto row_range = array.range_from({row, 0});
-      result = fmt::format_to(ctx.out(), "{}", fmt::join(row_range, " "));
-      result = fmt::format_to(ctx.out(), "\n");
-    }
-    return result;
-  }
-};
-
-// Custom formatter for Array2DBase<T>
-template <typename T>
-struct fmt::formatter<cpp_utils::Array2DBase<T>> : array2d_formatter<cpp_utils::Array2DBase<T>> {
-  constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
-};
-
-// Custom formatter for Array2D<T>
-template <typename T>
-struct fmt::formatter<cpp_utils::Array2D<T>> : array2d_formatter<cpp_utils::Array2D<T>> {
-  constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
-};
-
-// Custom formatter for SparseArray2D<T>
-template <typename T>
-struct fmt::formatter<cpp_utils::SparseArray2D<T>>
-    : array2d_formatter<cpp_utils::SparseArray2D<T>> {
-  constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
-};
