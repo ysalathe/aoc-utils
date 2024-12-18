@@ -1,8 +1,12 @@
 #pragma once
 
+#include <cmath>
+#include <functional>
 #include <map>
+#include <numeric>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace cpp_utils {
 
@@ -27,6 +31,9 @@ namespace cpp_utils {
 
     // multiplication with scalar
     Coords operator*(int scalar) const { return Coords{first * scalar, second * scalar}; }
+
+    // unary negation
+    Coords operator-() const { return Coords{-first, -second}; }
 
     // division by scalar
     Coords operator/(int scalar) const { return Coords{first / scalar, second / scalar}; }
@@ -61,5 +68,33 @@ namespace cpp_utils {
 
   template <typename T>
   using CoordsMap = std::map<Coords, T, CoordsCompare>;
+
+  cpp_utils::Coords step_into_direction(const cpp_utils::Coords start_coord,
+                                        const cpp_utils::Coords direction,
+                                        const int num_steps) {
+    return start_coord + (direction * num_steps);
+  }
+
+  auto normalize_direction(Coords const direction) {
+    auto const gcd = std::gcd(direction.first, direction.second);
+    return Coords{direction.first / gcd, direction.second / gcd};
+  }
+
+  auto get_all_coords_in_line(Coords const start_coord,
+                              Coords const direction,
+                              std::function<bool(Coords)> valid_fn) {
+    std::vector<Coords> coords;
+
+    auto const normalized_direction = normalize_direction(direction);
+    // now create valid coords in both directions starting from start_coord
+    for (int i = 1; valid_fn(step_into_direction(start_coord, normalized_direction, i)); ++i) {
+      coords.push_back(step_into_direction(start_coord, normalized_direction, i));
+    }
+    auto const neg_normalized_direction = -normalized_direction;
+    for (int i = 1; valid_fn(step_into_direction(start_coord, neg_normalized_direction, i)); ++i) {
+      coords.push_back(step_into_direction(start_coord, neg_normalized_direction, i));
+    }
+    return coords;
+  }
 
 }  // namespace cpp_utils
