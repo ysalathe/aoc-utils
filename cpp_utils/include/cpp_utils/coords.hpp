@@ -24,6 +24,12 @@ namespace cpp_utils {
     Coords operator+(Coords const& other) const {
       return Coords{first + other.first, second + other.second};
     }
+
+    // multiplication with scalar
+    Coords operator*(int scalar) const { return Coords{first * scalar, second * scalar}; }
+
+    // division by scalar
+    Coords operator/(int scalar) const { return Coords{first / scalar, second / scalar}; }
   };
 
   struct CoordsHash {
