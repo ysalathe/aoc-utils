@@ -9,21 +9,26 @@
 #include <vector>
 
 namespace cpp_utils {
-  std::optional<std::string> read_given_input_file(int argc, char* argv[]) {
-    if (argc < 2) {
-      fmt::print(stderr, "Usage: {} <filename>\n", argv[0]);
-      return std::nullopt;
-    }
 
-    std::ifstream file(argv[1]);
+  std::optional<std::string> read_input_file_given_by_name(std::string const& filename) {
+    std::ifstream file(filename);
     if (!file) {
-      fmt::print(stderr, "Error opening file: {}\n", argv[1]);
+      fmt::print(stderr, "Error opening file: {}\n", filename);
       return std::nullopt;
     }
 
     std::stringstream buffer;
     buffer << file.rdbuf();
     return buffer.str();
+  }
+
+  std::optional<std::string> read_input_file_given_by_argument(int argc, char* argv[]) {
+    if (argc < 2) {
+      fmt::print(stderr, "Usage: {} <filename>\n", argv[0]);
+      return std::nullopt;
+    }
+
+    return read_input_file_given_by_name(argv[1]);
   }
 
   std::vector<std::string> split_string(std::string const& str, std::string const& delimiter) {
