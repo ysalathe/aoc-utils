@@ -7,11 +7,11 @@
 
 namespace fmt {
   template <>
-  struct formatter<cpp_utils::Coords> {
+  struct formatter<cpp_utils::Coords2D> {
     constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
     template <typename FormatContext>
-    auto format(const cpp_utils::Coords& coords, FormatContext& ctx) {
+    auto format(const cpp_utils::Coords2D& coords, FormatContext& ctx) {
       return fmt::format_to(ctx.out(), "({}, {})", coords.first, coords.second);
     }
   };

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "array2d.hpp"
-#include "coords_formatter.hpp"
+#include "coords2d_formatter.hpp"
 
 #include <fmt/core.h>
 #include <fmt/format.h>

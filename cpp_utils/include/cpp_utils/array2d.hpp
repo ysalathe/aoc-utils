@@ -1,6 +1,6 @@
 #pragma once
 
-#include "coords.hpp"
+#include "coords2d.hpp"
 #include "input.hpp"
 
 #include <algorithm>
@@ -98,8 +98,8 @@ namespace cpp_utils {
     virtual reference operator()(int row, int col) = 0;
     virtual const_reference operator()(int row, int col) const = 0;
 
-    virtual reference operator()(Coords coords) = 0;
-    virtual const_reference operator()(Coords coords) const = 0;
+    virtual reference operator()(Coords2D coords) = 0;
+    virtual const_reference operator()(Coords2D coords) const = 0;
 
     size_t num_rows() const { return num_rows_; }
     size_t num_columns() const { return num_columns_; }
@@ -107,17 +107,17 @@ namespace cpp_utils {
     bool valid_index(int row, int col) const {
       return row >= 0 && row < num_rows_ && col >= 0 && col < num_columns_;
     }
-    bool valid_index(Coords coords) const { return valid_index(coords.first, coords.second); }
+    bool valid_index(Coords2D coords) const { return valid_index(coords.first, coords.second); }
 
-    Coords upper_left_corner() const { return Coords{0, 0}; }
-    Coords upper_right_corner() const { return Coords{0, num_columns_ - 1}; }
-    Coords lower_left_corner() const { return Coords{num_rows_ - 1, 0}; }
-    Coords lower_right_corner() const { return Coords{num_rows_ - 1, num_columns_ - 1}; }
+    Coords2D upper_left_corner() const { return Coords2D{0, 0}; }
+    Coords2D upper_right_corner() const { return Coords2D{0, num_columns_ - 1}; }
+    Coords2D lower_left_corner() const { return Coords2D{num_rows_ - 1, 0}; }
+    Coords2D lower_right_corner() const { return Coords2D{num_rows_ - 1, num_columns_ - 1}; }
 
-    const Coords step_coords_towards_direction(Coords coords,
-                                               Direction direction,
-                                               bool flatten = false) const {
-      Coords result = coords;
+    const Coords2D step_coords_towards_direction(Coords2D coords,
+                                                 Direction direction,
+                                                 bool flatten = false) const {
+      Coords2D result = coords;
       switch (direction) {
         case Direction::East:
           ++result.second;
@@ -185,7 +185,7 @@ namespace cpp_utils {
           typename std::conditional_t<IsConst, Array2DBase<T> const*, Array2DBase<T>*>;
 
       MyIterator(container_reference array,
-                 Coords starting_point,
+                 Coords2D starting_point,
                  Direction direction = default_direction,
                  bool flatten = default_flatten)
           : array_(&array), coords_(starting_point), direction(direction), flatten(flatten) {
@@ -253,7 +253,7 @@ namespace cpp_utils {
 
      private:
       container_pointer array_;
-      Coords coords_;
+      Coords2D coords_;
     };
 
     using Iterator = MyIterator<false>;
@@ -281,7 +281,7 @@ namespace cpp_utils {
           typename std::conditional_t<IsConst, Array2DBase<T> const*, Array2DBase<T>*>;
 
      public:
-      MyRange(container_reference array, Coords start_coords, Direction direction, bool flatten)
+      MyRange(container_reference array, Coords2D start_coords, Direction direction, bool flatten)
           : array_(&array), start_coords_(start_coords), direction_(direction), flatten_(flatten) {}
 
       ConstIterator begin() const {
@@ -304,8 +304,8 @@ namespace cpp_utils {
         return Iterator(*array_, end_coords(), direction_, flatten_);
       }
 
-      Coords start_coords() const { return start_coords_; }
-      Coords end_coords() const {
+      Coords2D start_coords() const { return start_coords_; }
+      Coords2D end_coords() const {
         if (flatten_) {
           return array_->flatten_end_coords(direction_);
         } else {
@@ -315,7 +315,7 @@ namespace cpp_utils {
 
      private:
       container_pointer array_;
-      Coords start_coords_;
+      Coords2D start_coords_;
       Direction direction_;
       bool flatten_;
     };
@@ -323,20 +323,20 @@ namespace cpp_utils {
     using Range = MyRange<false>;
     using ConstRange = MyRange<true>;
 
-    Range range_from(Coords start_coords,
+    Range range_from(Coords2D start_coords,
                      Direction direction = default_direction,
                      bool flatten = default_flatten) {
       return Range(*this, start_coords, direction, flatten);
     }
 
-    ConstRange range_from(Coords start_coords,
+    ConstRange range_from(Coords2D start_coords,
                           Direction direction = default_direction,
                           bool flatten = default_flatten) const {
       return ConstRange(*this, start_coords, direction, flatten);
     }
 
    private:
-    Coords flatten_begin_coords(Direction direction) const {
+    Coords2D flatten_begin_coords(Direction direction) const {
       switch (direction) {
         case Direction::East:
           return upper_left_corner();
@@ -351,7 +351,7 @@ namespace cpp_utils {
       }
     }
 
-    Coords flatten_end_coords(Direction direction) const {
+    Coords2D flatten_end_coords(Direction direction) const {
       switch (direction) {
         case Direction::East:
           return {num_rows_, 0};
@@ -366,8 +366,8 @@ namespace cpp_utils {
       }
     }
 
-    Coords end_coords(Coords start_coords, Direction direction) const {
-      Coords result;
+    Coords2D end_coords(Coords2D start_coords, Direction direction) const {
+      Coords2D result;
       switch (direction) {
         case Direction::East:
           result = {start_coords.first, num_columns_};
@@ -444,10 +444,10 @@ namespace cpp_utils {
       return data_.at(row).at(col);
     }
 
-    typename base::reference operator()(Coords coords) override {
+    typename base::reference operator()(Coords2D coords) override {
       return (*this)(coords.first, coords.second);
     }
-    typename base::const_reference operator()(Coords coords) const override {
+    typename base::const_reference operator()(Coords2D coords) const override {
       return (*this)(coords.first, coords.second);
     }
 
@@ -468,7 +468,7 @@ namespace cpp_utils {
       for (auto const [row, row_data] : std::views::enumerate(data)) {
         for (auto const [col, value] : std::views::enumerate(row_data)) {
           if (value != empty_element) {
-            data_[Coords{row, col}] = value;
+            data_[Coords2D{row, col}] = value;
           }
         }
       }
@@ -489,7 +489,7 @@ namespace cpp_utils {
 
     typename base::reference operator()(int row, int col) override {
       cleanup();
-      auto coords = Coords{row, col};
+      auto coords = Coords2D{row, col};
       auto [_, inserted] = data_.emplace(coords, empty_element_);
       if (inserted) {
         cleanup_coords_ = coords;
@@ -497,16 +497,16 @@ namespace cpp_utils {
       return data_[coords];
     }
     typename base::const_reference operator()(int row, int col) const override {
-      auto coords = Coords{row, col};
+      auto coords = Coords2D{row, col};
       if (!data_.contains(coords)) {
         return empty_element_;
       }
       return data_.at(coords);
     }
-    typename base::reference operator()(Coords coords) override {
+    typename base::reference operator()(Coords2D coords) override {
       return (*this)(coords.first, coords.second);
     }
-    typename base::const_reference operator()(Coords coords) const override {
+    typename base::const_reference operator()(Coords2D coords) const override {
       return (*this)(coords.first, coords.second);
     }
 
@@ -525,9 +525,9 @@ namespace cpp_utils {
     }
 
    private:
-    CoordsMap<T> data_;
+    Coords2DMap<T> data_;
     T empty_element_;
-    std::optional<Coords> cleanup_coords_;
+    std::optional<Coords2D> cleanup_coords_;
   };
 
   // Builders for Array2D and SparseArray2D
