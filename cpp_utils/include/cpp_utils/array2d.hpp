@@ -178,6 +178,9 @@ namespace cpp_utils {
       using iterator_category = std::bidirectional_iterator_tag;
       using value_type = T;
       using difference_type = std::ptrdiff_t;
+      using pointer = typename std::conditional_t<IsConst,
+                                                  typename std::vector<T>::const_pointer,
+                                                  typename std::vector<T>::pointer>;
       using reference = typename std::conditional_t<IsConst,
                                                     typename std::vector<T>::const_reference,
                                                     typename std::vector<T>::reference>;
@@ -185,6 +188,9 @@ namespace cpp_utils {
           typename std::conditional_t<IsConst, Array2DBase<T> const&, Array2DBase<T>&>;
       using container_pointer =
           typename std::conditional_t<IsConst, Array2DBase<T> const*, Array2DBase<T>*>;
+
+      // Default constructor
+      MyIterator() = default;
 
       MyIterator(container_reference array,
                  Coords2D starting_point,
@@ -200,22 +206,35 @@ namespace cpp_utils {
       Direction direction;
       bool flatten;
 
-      auto const& operator*() const { return (*array_)(coords_); }
+      auto const& operator*() const {
+        assert_not_null();
+        return (*array_)(coords_);
+      }
 
       reference operator*()
         requires(!IsConst)
       {
+        assert_not_null();
         return (*array_)(coords_);
       }
 
+      pointer operator->() const {
+        assert_not_null();
+        return &(*array_)(coords_);
+      }
+
+      auto coords() const { return coords_; }
+
       // Pre-increment
       MyIterator& operator++() {
+        assert_not_null();
         coords_ = array_->step_coords_towards_direction(coords_, direction, flatten);
         return *this;
       }
 
       // Post-increment
       MyIterator operator++(int) {
+        assert_not_null();
         MyIterator tmp = *this;
         ++(*this);
         return tmp;
@@ -223,6 +242,7 @@ namespace cpp_utils {
 
       // Pre-decrement
       MyIterator& operator--() {
+        assert_not_null();
         // Implement the reverse of step_coords_towards_direction
         coords_ =
             array_->step_coords_towards_direction(coords_, reverse_direction(direction), flatten);
@@ -231,12 +251,14 @@ namespace cpp_utils {
 
       // Post-decrement
       MyIterator operator--(int) {
+        assert_not_null();
         MyIterator tmp = *this;
         --(*this);
         return tmp;
       }
 
       MyIterator& operator+(int n) {
+        assert_not_null();
         for (int k = 0; k < n; ++k) {
           ++(*this);
         }
@@ -244,6 +266,7 @@ namespace cpp_utils {
       }
 
       MyIterator& operator-(int n) {
+        assert_not_null();
         for (int k = 0; k < n; ++k) {
           --(*this);
         }
@@ -251,10 +274,19 @@ namespace cpp_utils {
       }
 
       bool operator==(MyIterator const& other) const { return coords_ == other.coords_; }
-      bool operator==(Sentinel const&) const { return !array_->valid_index(coords_); }
+      bool operator==(Sentinel const&) const {
+        assert_not_null();
+        return !array_->valid_index(coords_);
+      }
 
      private:
-      container_pointer array_;
+      void assert_not_null() const {
+        if (array_ == nullptr) {
+          throw std::logic_error("Iterator is not initialized.");
+        }
+      }
+
+      container_pointer array_ = NULL;
       Coords2D coords_;
     };
 

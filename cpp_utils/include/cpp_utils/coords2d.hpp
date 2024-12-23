@@ -19,6 +19,11 @@ namespace cpp_utils {
     int& col() { return second; }
     int col() const { return second; }
 
+    // equality
+    bool operator==(Coords2D const& other) const {
+      return first == other.first && second == other.second;
+    }
+
     // subtraction
     Coords2D operator-(Coords2D const& other) const {
       return Coords2D{first - other.first, second - other.second};

@@ -5,6 +5,10 @@
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <ranges>
+#include <utility>
+
 namespace {
 
   // Factory functions to create different derivatives of Array2DBase
@@ -285,6 +289,12 @@ namespace {
   TYPED_TEST(Array2DBaseTest, FormatEmpty) {
     std::string expected = "Array2DBase(0x0)\n";
     EXPECT_EQ(fmt::format("{}", *(this->empty_array_)), expected);
+  }
+
+  TYPED_TEST(Array2DBaseTest, StdFindWorks) {
+    auto it = std::ranges::find(std::as_const(*(this->array_)), 3);
+    EXPECT_EQ(*it, 3);
+    EXPECT_EQ(it.coords(), cpp_utils::Coords2D(0, 2));
   }
 
   // Specialized tests for Array2D
