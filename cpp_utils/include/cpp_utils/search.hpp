@@ -2,15 +2,20 @@
 #include <functional>
 #include <type_traits>
 #include <unordered_set>
+#include <vector>
 namespace cpp_utils {
 
-  template <typename T, bool FindAll = false>
-  std::conditional_t<FindAll, std::unordered_set<T>, T> depth_first_search(
-      T start,
-      std::function<std::vector<T>(T)> const& get_successors,
-      std::function<bool(T)> const& is_goal) {
+  template <typename T, bool FindAll = false, bool FindAllDistinct = true>
+  std::conditional_t<FindAll,
+                     std::conditional_t<FindAllDistinct, std::unordered_set<T>, std::vector<T>>,
+                     T>
+  depth_first_search(T start,
+                     std::function<std::vector<T>(T)> const& get_successors,
+                     std::function<bool(T)> const& is_goal) {
     std::vector<T> stack = {start};
-    std::conditional_t<FindAll, std::unordered_set<T>, T> result;
+    std::conditional_t<
+        FindAll, std::conditional_t<FindAllDistinct, std::unordered_set<T>, std::vector<T>>, T>
+        result;
     if constexpr (!FindAll) {
       result = start;
     }
@@ -19,7 +24,11 @@ namespace cpp_utils {
       stack.pop_back();
       if (is_goal(current)) {
         if constexpr (FindAll) {
-          result.insert(current);
+          if constexpr (FindAllDistinct) {
+            result.insert(current);
+          } else {
+            result.push_back(current);
+          }
         } else {
           return current;
         }
@@ -31,13 +40,17 @@ namespace cpp_utils {
     return result;
   }
 
-  template <typename T, bool FindAll = false>
-  std::conditional_t<FindAll, std::unordered_set<T>, T> breadth_first_search(
-      T start,
-      std::function<std::vector<T>(T)> const& get_successors,
-      std::function<bool(T)> const& is_goal) {
+  template <typename T, bool FindAll = false, bool FindAllDistinct = true>
+  std::conditional_t<FindAll,
+                     std::conditional_t<FindAllDistinct, std::unordered_set<T>, std::vector<T>>,
+                     T>
+  breadth_first_search(T start,
+                       std::function<std::vector<T>(T)> const& get_successors,
+                       std::function<bool(T)> const& is_goal) {
     std::vector<T> queue = {start};
-    std::conditional_t<FindAll, std::unordered_set<T>, T> result;
+    std::conditional_t<
+        FindAll, std::conditional_t<FindAllDistinct, std::unordered_set<T>, std::vector<T>>, T>
+        result;
     if constexpr (!FindAll) {
       result = start;
     }
@@ -46,7 +59,11 @@ namespace cpp_utils {
       queue.erase(queue.begin());
       if (is_goal(current)) {
         if constexpr (FindAll) {
-          result.insert(current);
+          if constexpr (FindAllDistinct) {
+            result.insert(current);
+          } else {
+            result.push_back(current);
+          }
         } else {
           return current;
         }
