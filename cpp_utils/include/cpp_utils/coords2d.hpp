@@ -114,6 +114,12 @@ namespace cpp_utils {
 
     // division by scalar
     Coords2D operator/(int scalar) const { return Coords2D{first / scalar, second / scalar}; }
+
+    struct Hash {
+      std::size_t operator()(const Coords2D& coords) const {
+        return std::hash<int>{}(coords.first) ^ std::hash<int>{}(coords.second);
+      }
+    };
   };
 
   struct Coords2DHash {
@@ -175,3 +181,11 @@ namespace cpp_utils {
   }
 
 }  // namespace cpp_utils
+
+// Specialize std::hash for Coords2D
+template <>
+struct std::hash<cpp_utils::Coords2D> {
+  std::size_t operator()(const cpp_utils::Coords2D& coords) const {
+    return cpp_utils::Coords2D::Hash{}(coords);
+  }
+};
