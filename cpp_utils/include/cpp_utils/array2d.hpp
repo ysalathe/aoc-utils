@@ -27,53 +27,6 @@
 namespace cpp_utils {
 
   struct Sentinel {};
-  enum class Direction { East, SouthEast, South, SouthWest, West, NorthWest, North, NorthEast };
-
-  Direction reverse_direction(Direction direction) {
-    switch (direction) {
-      case Direction::East:
-        return Direction::West;
-      case Direction::SouthEast:
-        return Direction::NorthWest;
-      case Direction::South:
-        return Direction::North;
-      case Direction::SouthWest:
-        return Direction::NorthEast;
-      case Direction::West:
-        return Direction::East;
-      case Direction::NorthWest:
-        return Direction::SouthEast;
-      case Direction::North:
-        return Direction::South;
-      case Direction::NorthEast:
-        return Direction::SouthWest;
-      default:
-        throw std::invalid_argument("Invalid direction");
-    }
-  }
-
-  Direction turn_right_90_degrees(Direction direction) {
-    switch (direction) {
-      case Direction::East:
-        return Direction::South;
-      case Direction::South:
-        return Direction::West;
-      case Direction::West:
-        return Direction::North;
-      case Direction::North:
-        return Direction::East;
-      case Direction::SouthEast:
-        return Direction::SouthWest;
-      case Direction::SouthWest:
-        return Direction::NorthWest;
-      case Direction::NorthWest:
-        return Direction::NorthEast;
-      case Direction::NorthEast:
-        return Direction::SouthEast;
-      default:
-        throw std::invalid_argument("Invalid direction");
-    }
-  }
 
   // Abstract base class for 2D arrays
   template <typename T>
@@ -106,10 +59,12 @@ namespace cpp_utils {
     size_t num_rows() const { return num_rows_; }
     size_t num_columns() const { return num_columns_; }
 
-    bool valid_index(int row, int col) const {
+    bool is_valid_index(int row, int col) const {
       return row >= 0 && row < num_rows_ && col >= 0 && col < num_columns_;
     }
-    bool valid_index(Coords2D coords) const { return valid_index(coords.first, coords.second); }
+    bool is_valid_index(Coords2D coords) const {
+      return is_valid_index(coords.first, coords.second);
+    }
 
     Coords2D upper_left_corner() const { return Coords2D{0, 0}; }
     Coords2D upper_right_corner() const { return Coords2D{0, num_columns_ - 1}; }
@@ -119,56 +74,40 @@ namespace cpp_utils {
     const Coords2D step_coords_towards_direction(Coords2D coords,
                                                  Direction direction,
                                                  bool flatten = false) const {
-      Coords2D result = coords;
-      switch (direction) {
-        case Direction::East:
-          ++result.second;
-          if (flatten && result.second == num_columns()) {
-            result.second = 0;
-            ++result.first;
-          }
-          break;
-        case Direction::SouthEast:
-          ++result.first;
-          ++result.second;
-          break;
-        case Direction::South:
-          ++result.first;
-          if (flatten && result.first == num_rows()) {
-            result.first = 0;
-            ++result.second;
-            ;
-          }
-          break;
-        case Direction::SouthWest:
-          ++result.first;
-          --result.second;
-          break;
-        case Direction::West:
-          --result.second;
-          if (flatten && result.second == -1) {
-            result.second = num_columns() - 1;
-            --result.first;
-          }
-          break;
-        case Direction::NorthWest:
-          --result.first;
-          --result.second;
-          break;
-        case Direction::North:
-          --result.first;
-          if (flatten && result.first == -1) {
-            result.first = num_rows() - 1;
-            --result.second;
-          }
-          break;
-        case Direction::NorthEast:
-          --result.first;
-          ++result.second;
-          break;
-        default:
-          throw std::invalid_argument("Invalid direction");
+      Coords2D result = coords.step_towards_direction(direction);
+
+      if (flatten) {
+        switch (direction) {
+          case Direction::East:
+            if (result.second == num_columns()) {
+              result.second = 0;
+              ++result.first;
+            }
+            break;
+          case Direction::South:
+            if (result.first == num_rows()) {
+              result.first = 0;
+              ++result.second;
+              ;
+            }
+            break;
+          case Direction::West:
+            if (result.second == -1) {
+              result.second = num_columns() - 1;
+              --result.first;
+            }
+            break;
+          case Direction::North:
+            if (result.first == -1) {
+              result.first = num_rows() - 1;
+              --result.second;
+            }
+            break;
+          default:
+            // do nothing
+        }
       }
+
       return result;
     }
 
@@ -276,7 +215,7 @@ namespace cpp_utils {
       bool operator==(MyIterator const& other) const { return coords_ == other.coords_; }
       bool operator==(Sentinel const&) const {
         assert_not_null();
-        return !array_->valid_index(coords_);
+        return !array_->is_valid_index(coords_);
       }
 
      private:

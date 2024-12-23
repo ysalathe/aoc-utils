@@ -4,11 +4,60 @@
 #include <functional>
 #include <map>
 #include <numeric>
+#include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 namespace cpp_utils {
+
+  enum class Direction { East, SouthEast, South, SouthWest, West, NorthWest, North, NorthEast };
+
+  Direction reverse_direction(Direction direction) {
+    switch (direction) {
+      case Direction::East:
+        return Direction::West;
+      case Direction::SouthEast:
+        return Direction::NorthWest;
+      case Direction::South:
+        return Direction::North;
+      case Direction::SouthWest:
+        return Direction::NorthEast;
+      case Direction::West:
+        return Direction::East;
+      case Direction::NorthWest:
+        return Direction::SouthEast;
+      case Direction::North:
+        return Direction::South;
+      case Direction::NorthEast:
+        return Direction::SouthWest;
+      default:
+        throw std::invalid_argument("Invalid direction");
+    }
+  }
+
+  Direction turn_right_90_degrees(Direction direction) {
+    switch (direction) {
+      case Direction::East:
+        return Direction::South;
+      case Direction::South:
+        return Direction::West;
+      case Direction::West:
+        return Direction::North;
+      case Direction::North:
+        return Direction::East;
+      case Direction::SouthEast:
+        return Direction::SouthWest;
+      case Direction::SouthWest:
+        return Direction::NorthWest;
+      case Direction::NorthWest:
+        return Direction::NorthEast;
+      case Direction::NorthEast:
+        return Direction::SouthEast;
+      default:
+        throw std::invalid_argument("Invalid direction");
+    }
+  }
 
   struct Coords2D : public std::pair<int, int> {
     using std::pair<int, int>::pair;
@@ -18,6 +67,29 @@ namespace cpp_utils {
 
     int& col() { return second; }
     int col() const { return second; }
+
+    Coords2D step_towards_direction(Direction direction) const {
+      switch (direction) {
+        case Direction::East:
+          return Coords2D{first, second + 1};
+        case Direction::SouthEast:
+          return Coords2D{first + 1, second + 1};
+        case Direction::South:
+          return Coords2D{first + 1, second};
+        case Direction::SouthWest:
+          return Coords2D{first + 1, second - 1};
+        case Direction::West:
+          return Coords2D{first, second - 1};
+        case Direction::NorthWest:
+          return Coords2D{first - 1, second - 1};
+        case Direction::North:
+          return Coords2D{first - 1, second};
+        case Direction::NorthEast:
+          return Coords2D{first - 1, second + 1};
+        default:
+          throw std::invalid_argument("Invalid direction");
+      }
+    }
 
     // equality
     bool operator==(Coords2D const& other) const {
