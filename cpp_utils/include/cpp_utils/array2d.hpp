@@ -105,6 +105,7 @@ namespace cpp_utils {
             break;
           default:
             // do nothing
+            break;
         }
       }
 
