@@ -6,6 +6,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace cpp_utils {
@@ -31,11 +32,12 @@ namespace cpp_utils {
     return read_input_file_given_by_name(argv[1]);
   }
 
-  std::vector<std::string> split_string(std::string const& str, std::string const& delimiter) {
-    std::vector<std::string> parts;
+  std::vector<std::string_view> split_string(std::string_view const& str,
+                                             std::string_view const& delimiter) {
+    std::vector<std::string_view> parts;
     size_t start = 0;
     size_t end = str.find(delimiter);
-    while (end != std::string::npos) {
+    while (end != std::string_view::npos) {
       if (end > start) {
         parts.push_back(str.substr(start, end - start));
       }
@@ -46,7 +48,7 @@ namespace cpp_utils {
     return parts;
   }
 
-  std::vector<std::string> split_string(std::string const& str, char delimiter) {
+  std::vector<std::string_view> split_string(std::string_view const& str, char delimiter) {
     return split_string(str, std::string(1, delimiter));
   }
 

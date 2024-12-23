@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <charconv>
 #include <cmath>
 #include <cstdint>
 #include <functional>
@@ -15,6 +16,7 @@
 #include <span>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
@@ -534,24 +536,24 @@ namespace cpp_utils {
   template <typename T>
   class Array2DBuilder {
    public:
-    static const std::function<T(std::string)> default_converter;
+    static const std::function<T(std::string_view)> default_converter;
 
     static Array2D<T> create_from_string(
-        std::string input,
-        std::string row_separator = "\n",
-        std::string column_separator = " ",
-        std::function<T(std::string)> converter = default_converter) {
+        std::string_view input,
+        std::string_view row_separator = "\n",
+        std::string_view column_separator = " ",
+        std::function<T(std::string_view)> converter = default_converter) {
       auto const vec =
           get_elements_from_input(std::move(input), row_separator, column_separator, converter);
       return Array2D<T>(std::move(vec));
     }
 
     static SparseArray2D<T> create_sparse_from_string(
-        std::string input,
+        std::string_view input,
         T empty_element,
-        std::string row_separator = "\n",
-        std::string column_separator = " ",
-        std::function<T(std::string)> converter = default_converter) {
+        std::string_view row_separator = "\n",
+        std::string_view column_separator = " ",
+        std::function<T(std::string_view)> converter = default_converter) {
       auto const vec =
           get_elements_from_input(std::move(input), row_separator, column_separator, converter);
       return SparseArray2D<T>(std::move(vec), empty_element);
@@ -559,15 +561,15 @@ namespace cpp_utils {
 
    private:
     static std::vector<std::vector<T>> get_elements_from_input(
-        std::string input,
-        std::string row_separator,
-        std::string column_separator,
-        std::function<T(std::string)> converter) {
+        std::string_view input,
+        std::string_view row_separator,
+        std::string_view column_separator,
+        std::function<T(std::string_view)> converter) {
       auto lines = cpp_utils::split_string(input, row_separator);
       std::vector<std::vector<T>> result;
       std::ranges::transform(
           lines | std::views::filter([](auto const& line) { return !line.empty(); }),
-          std::back_inserter(result), [column_separator, converter](std::string const& line) {
+          std::back_inserter(result), [column_separator, converter](std::string_view line) {
             std::vector<T> row;
             if (column_separator.empty()) {
               std::transform(line.begin(), line.end(), std::back_inserter(row),
@@ -584,13 +586,19 @@ namespace cpp_utils {
 
   // Define the static member outside the class
   template <typename T>
-  const std::function<T(std::string)> Array2DBuilder<T>::default_converter =
-      [](std::string s) { return static_cast<T>(std::stoll(s)); };
+  const std::function<T(std::string_view)> Array2DBuilder<T>::default_converter =
+      [](std::string_view sv) {
+        T target_value;
+        auto result = std::from_chars(sv.data(), sv.data() + sv.size(), target_value);
+        if (result.ec != std::errc()) {
+          throw std::invalid_argument("Could not convert string to target type");
+        }
+        return target_value;
+      };
 
   template <>
-  const std::function<char(std::string)> Array2DBuilder<char>::default_converter =
-      [](std::string s) { return static_cast<char>(s[0]); };
-
+  const std::function<char(std::string_view)> Array2DBuilder<char>::default_converter =
+      [](std::string_view s) { return static_cast<char>(s[0]); };
 }  // namespace cpp_utils
 
 // Helper trait to check if a type is derived from Array2DBase
