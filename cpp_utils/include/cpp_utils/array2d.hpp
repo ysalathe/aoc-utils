@@ -39,11 +39,16 @@ namespace cpp_utils {
     using const_reference = T const&;
 
     // Exceptions
-    class DiagonalFlattenNotImplemented : public std::logic_error {
+    class NotImplementedError : public std::logic_error {
+     public:
+      NotImplementedError(std::string const& message) : std::logic_error(message) {}
+    };
+
+    class DiagonalFlattenNotImplemented : NotImplementedError {
      public:
       DiagonalFlattenNotImplemented()
-          : std::logic_error("Combination of diagonal direction and flatten not yet implemented.") {
-      }
+          : NotImplementedError(
+                "Combination of diagonal direction and flatten not yet implemented.") {}
     };
 
     Array2DBase(size_t num_rows, size_t num_columns)
@@ -104,7 +109,7 @@ namespace cpp_utils {
             }
             break;
           default:
-            // do nothing
+            throw DiagonalFlattenNotImplemented();
             break;
         }
       }
@@ -496,6 +501,80 @@ namespace cpp_utils {
         data_.erase(*cleanup_coords_);
       }
       cleanup_coords_.reset();
+    }
+
+    bool is_empty(Coords2D const& coords) const {
+      return !data_.contains(coords) || data_.at(coords) == empty_element_;
+    }
+
+    std::optional<Coords2D> find_coords_of_non_empty_element_in_direction(
+        Coords2D const& coords,
+        Direction direction) const {
+      switch (direction) {
+        case Direction::South:
+          return find_coords_of_non_empty_element_south(coords);
+        case Direction::North:
+          return find_coords_of_non_empty_element_north(coords);
+        case Direction::East:
+          return find_coords_of_non_empty_element_east(coords);
+        case Direction::West:
+          return find_coords_of_non_empty_element_west(coords);
+        default:
+          throw typename base::NotImplementedError(
+              "find non-empty element in diagonal directions not yet implemented");
+          return std::nullopt;
+      }
+    }
+
+    std::optional<Coords2D> find_coords_of_non_empty_element_east(Coords2D const& coords) const {
+      // we can use that the map is ordered first by the first coordinate and then by the second
+      auto it = data_.upper_bound(coords);
+      if (it == data_.end()) {
+        return std::nullopt;
+      }
+      const auto new_coords = it->first;
+      if (new_coords.first == coords.first && base::is_valid_index(new_coords)) {
+        return new_coords;
+      }
+      return std::nullopt;
+    }
+
+    std::optional<Coords2D> find_coords_of_non_empty_element_west(Coords2D const& coords) const {
+      // we can use that the map is ordered first by the first coordinate and then by the second
+      auto it = data_.lower_bound(coords);
+      it--;
+      if (it == data_.end()) {
+        return std::nullopt;
+      }
+      const auto new_coords = it->first;
+      if (new_coords.first == coords.first && base::is_valid_index(new_coords)) {
+        return new_coords;
+      }
+      return std::nullopt;
+    }
+
+    std::optional<Coords2D> find_coords_of_non_empty_element_south(Coords2D const& coords) const {
+      auto row = coords.row() + 1;
+      auto column = coords.col();
+      while (base::is_valid_index(row, column) && is_empty(Coords2D{row, column})) {
+        row++;
+      }
+      if (base::is_valid_index(row, column)) {
+        return Coords2D{row, column};
+      }
+      return std::nullopt;
+    }
+
+    std::optional<Coords2D> find_coords_of_non_empty_element_north(Coords2D const& coords) const {
+      auto row = coords.row() - 1;
+      auto column = coords.col();
+      while (base::is_valid_index(row, column) && is_empty(Coords2D{row, column})) {
+        row--;
+      }
+      if (base::is_valid_index(row, column)) {
+        return Coords2D{row, column};
+      }
+      return std::nullopt;
     }
 
    private:
