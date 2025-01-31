@@ -76,47 +76,9 @@ namespace cpp_utils {
     Coords2D lower_left_corner() const { return Coords2D{num_rows_ - 1, 0}; }
     Coords2D lower_right_corner() const { return Coords2D{num_rows_ - 1, num_columns_ - 1}; }
 
-    const Coords2D step_coords_towards_direction(Coords2D coords,
-                                                 Direction direction,
-                                                 bool flatten = false) const {
-      Coords2D result = coords.step_towards_direction(direction);
-
-      if (flatten) {
-        switch (direction) {
-          case Direction::East:
-            if (result.second == num_columns()) {
-              result.second = 0;
-              ++result.first;
-            }
-            break;
-          case Direction::South:
-            if (result.first == num_rows()) {
-              result.first = 0;
-              ++result.second;
-              ;
-            }
-            break;
-          case Direction::West:
-            if (result.second == -1) {
-              result.second = num_columns() - 1;
-              --result.first;
-            }
-            break;
-          case Direction::North:
-            if (result.first == -1) {
-              result.first = num_rows() - 1;
-              --result.second;
-            }
-            break;
-          default:
-            throw DiagonalFlattenNotImplemented();
-            break;
-        }
-      }
-
-      return result;
-    }
-
+    Coords2D step_coords_towards_direction(Coords2D coords,
+                                           Direction direction,
+                                           bool flatten = false) const;
     template <bool IsConst>
     class MyIterator {
      public:
@@ -635,21 +597,6 @@ namespace cpp_utils {
     }
   };
 
-  // Define the static member outside the class
-  template <typename T>
-  const std::function<T(std::string_view)> Array2DBuilder<T>::default_converter =
-      [](std::string_view sv) {
-        T target_value;
-        auto result = std::from_chars(sv.data(), sv.data() + sv.size(), target_value);
-        if (result.ec != std::errc()) {
-          throw std::invalid_argument("Could not convert string to target type");
-        }
-        return target_value;
-      };
-
-  template <>
-  const std::function<char(std::string_view)> Array2DBuilder<char>::default_converter =
-      [](std::string_view s) { return static_cast<char>(s[0]); };
 }  // namespace cpp_utils
 
 // Helper trait to check if a type is derived from Array2DBase
@@ -661,3 +608,5 @@ struct is_array2d_base<cpp_utils::Array2DBase<T>> : std::true_type {};
 
 template <typename T>
 inline constexpr bool is_array2d_base_v = is_array2d_base<T>::value;
+
+#include "array2d.tpp"

@@ -8,6 +8,12 @@ add_library(${PROJECT_NAME} INTERFACE)
 # Specify the include directories
 target_include_directories(${PROJECT_NAME} INTERFACE include)
 
+# Add soures to target
+target_sources(${PROJECT_NAME}
+PUBLIC
+src/coords2d.cpp
+src/input.cpp)
+
 # Add the tests subdirectory
 add_subdirectory(tests)
 
