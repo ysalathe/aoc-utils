@@ -1,4 +1,4 @@
-#include "cpp_utils/input.hpp"
+#include <cpp_utils/input.hpp>
 
 namespace cpp_utils {
 

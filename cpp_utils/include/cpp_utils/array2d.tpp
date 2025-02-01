@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cpp_utils/array2d.hpp"
+#include <cpp_utils/array2d.hpp>
 
 #include <charconv>
 #include <stdexcept>
@@ -50,21 +50,13 @@ namespace cpp_utils {
   }
 
   template <typename T>
-  const std::function<T(std::string_view)> Array2DBuilder<T>::default_converter =
-      [](std::string_view sv) {
-        T target_value;
-        auto result = std::from_chars(sv.data(), sv.data() + sv.size(), target_value);
-        if (result.ec != std::errc()) {
-          throw std::invalid_argument("Could not convert string to target type");
-        }
-        return target_value;
-      };
-
-  template <>
-  const std::function<char(std::string_view)> Array2DBuilder<char>::default_converter =
-      [](std::string_view s) { return static_cast<char>(s[0]); };
-
-  // Explicit instantiation
-  template const std::function<int(std::string_view)> Array2DBuilder<int>::default_converter;
+  T Array2DBuilder<T>::default_converter(std::string_view sv) {
+    T target_value;
+    auto result = std::from_chars(sv.data(), sv.data() + sv.size(), target_value);
+    if (result.ec != std::errc()) {
+      throw std::invalid_argument("Could not convert string to target type");
+    }
+    return target_value;
+  };
 
 }  // namespace cpp_utils

@@ -549,7 +549,7 @@ namespace cpp_utils {
   template <typename T>
   class Array2DBuilder {
    public:
-    static const std::function<T(std::string_view)> default_converter;
+    static T default_converter(std::string_view);
 
     static Array2D<T> create_from_string(
         std::string_view input,
