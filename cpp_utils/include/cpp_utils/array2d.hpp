@@ -87,7 +87,7 @@ namespace cpp_utils {
      public:
       using iterator_category = std::bidirectional_iterator_tag;
       using value_type = T;
-      using difference_type = std::ptrdiff_t;
+      using difference_type = int;
       using pointer = typename std::conditional_t<IsConst,
                                                   typename std::vector<T>::const_pointer,
                                                   typename std::vector<T>::pointer>;
@@ -143,7 +143,7 @@ namespace cpp_utils {
       }
 
       // Post-increment
-      MyIterator operator++(int) {
+      MyIterator operator++(difference_type) {
         assert_not_null();
         MyIterator tmp = *this;
         ++(*this);
@@ -160,24 +160,24 @@ namespace cpp_utils {
       }
 
       // Post-decrement
-      MyIterator operator--(int) {
+      MyIterator operator--(difference_type) {
         assert_not_null();
         MyIterator tmp = *this;
         --(*this);
         return tmp;
       }
 
-      MyIterator& operator+(int n) {
+      MyIterator& operator+(difference_type n) {
         assert_not_null();
-        for (int k = 0; k < n; ++k) {
+        for (difference_type k = 0; k < n; ++k) {
           ++(*this);
         }
         return *this;
       }
 
-      MyIterator& operator-(int n) {
+      MyIterator& operator-(difference_type n) {
         assert_not_null();
-        for (int k = 0; k < n; ++k) {
+        for (difference_type k = 0; k < n; ++k) {
           --(*this);
         }
         return *this;

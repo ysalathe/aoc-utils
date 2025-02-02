@@ -60,6 +60,14 @@ namespace {
 
   TYPED_TEST_SUITE(Array2DBaseTest, Implementations);
 
+  TYPED_TEST(Array2DBaseTest, Dimensions) {
+    EXPECT_EQ(this->array_->num_rows(), 2);
+    EXPECT_EQ(this->array_->num_columns(), 3);
+    auto dimensions = this->array_->dimensions();
+    EXPECT_EQ(std::get<0>(dimensions), 2);
+    EXPECT_EQ(std::get<1>(dimensions), 3);
+  }
+
   TYPED_TEST(Array2DBaseTest, IteratesEast) {
     auto range = this->array_->range_from(this->array_->upper_left_corner());
     auto it = range.begin();
