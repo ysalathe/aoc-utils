@@ -97,4 +97,10 @@ namespace cpp_utils {
     }
     return coords;
   }
+
+  std::array<Coords2D, 4> get_direct_neighbour_coords(Coords2D const coords) {
+    return {coords + Coords2D{0, 1}, coords + Coords2D{1, 0}, coords + Coords2D{0, -1},
+            coords + Coords2D{-1, 0}};
+  }
+
 }  // namespace cpp_utils

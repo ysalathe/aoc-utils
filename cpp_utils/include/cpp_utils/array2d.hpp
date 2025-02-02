@@ -51,8 +51,9 @@ namespace cpp_utils {
                 "Combination of diagonal direction and flatten not yet implemented.") {}
     };
 
-    Array2DBase(size_t num_rows, size_t num_columns)
-        : num_rows_(num_rows), num_columns_(num_columns) {}
+    Array2DBase(std::tuple<size_t, size_t> dimensions)
+        : num_rows_(std::get<0>(dimensions)), num_columns_(std::get<1>(dimensions)) {}
+
     virtual ~Array2DBase() = default;
 
     virtual reference operator()(int row, int col) = 0;
@@ -63,6 +64,8 @@ namespace cpp_utils {
 
     size_t num_rows() const { return num_rows_; }
     size_t num_columns() const { return num_columns_; }
+
+    std::tuple<size_t, size_t> dimensions() const { return {num_rows_, num_columns_}; }
 
     bool is_valid_index(int row, int col) const {
       return row >= 0 && row < num_rows_ && col >= 0 && col < num_columns_;
@@ -360,20 +363,25 @@ namespace cpp_utils {
 
    public:
     // Constructors
-    Array2D(size_t num_rows, size_t num_columns)
-        : base(num_rows, num_columns), data_(num_rows, std::vector<T>(num_columns)) {}
+    Array2D(std::tuple<size_t, size_t> dimensions)
+        : base(dimensions),
+          data_(std::get<0>(dimensions), std::vector<T>(std::get<1>(dimensions))) {}
+
     Array2D(std::vector<std::vector<T>> data)
-        : base(data.size(), data.at(0).size()), data_{std::move(data)} {
+        : base({data.size(), data.at(0).size()}), data_{std::move(data)} {
       assert(std::all_of(data.begin(), data.end(),
                          [this](auto const& row) { return row.size() == base::num_columns(); }));
     }
-    Array2D(size_t num_rows, size_t num_columns, T const& value)
-        : base(num_rows, num_columns), data_(num_rows, std::vector<T>(num_columns, value)) {}
-    Array2D(size_t num_rows,
-            size_t num_columns,
+
+    Array2D(std::tuple<size_t, size_t> dimensions, T const& value)
+        : base(dimensions),
+          data_(std::get<0>(dimensions), std::vector<T>(std::get<1>(dimensions), value)) {}
+
+    Array2D(std::tuple<size_t, size_t> dimensions,
             std::span<const T> const& values,
             Direction direction = base::default_direction)
-        : base(num_rows, num_columns), data_(num_rows, std::vector<T>(num_columns)) {
+        : base(dimensions),
+          data_(std::get<0>(dimensions), std::vector<T>(std::get<1>(dimensions))) {
       assert(values.size() == base::num_rows() * base::num_columns());
 
       std::ranges::transform(values, base::begin(direction),
@@ -403,9 +411,13 @@ namespace cpp_utils {
    public:
     // Constructors
     SparseArray2D(size_t num_rows, size_t num_columns, T empty_element)
-        : base(num_rows, num_columns), empty_element_(empty_element) {}
+        : base({num_rows, num_columns}), empty_element_(empty_element) {}
+
+    SparseArray2D(std::tuple<size_t, size_t> dimensions, T empty_element)
+        : base(dimensions), empty_element_(empty_element) {}
+
     SparseArray2D(std::vector<std::vector<T>> data, T empty_element)
-        : base(data.size(), data.at(0).size()), empty_element_(empty_element) {
+        : base({data.size(), data.at(0).size()}), empty_element_(empty_element) {
       for (auto const [row, row_data] : std::views::enumerate(data)) {
         for (auto const [col, value] : std::views::enumerate(row_data)) {
           if (value != empty_element) {
@@ -414,12 +426,26 @@ namespace cpp_utils {
         }
       }
     }
+
     SparseArray2D(int num_rows,
                   int num_columns,
                   std::span<const T> const& values,
                   T empty_element,
                   Direction direction = base::default_direction)
-        : base(num_rows, num_columns), empty_element_(empty_element) {
+        : base({num_rows, num_columns}), empty_element_(empty_element) {
+      assert(values.size() == base::num_rows() * base::num_columns());
+
+      std::ranges::transform(values, base::begin(direction),
+                             [](auto const& value) { return value; });
+      // make sure the array is cleaned up
+      cleanup();
+    }
+
+    SparseArray2D(std::tuple<size_t, size_t> dimensions,
+                  std::span<const T> const& values,
+                  T empty_element,
+                  Direction direction = base::default_direction)
+        : base(dimensions), empty_element_(empty_element) {
       assert(values.size() == base::num_rows() * base::num_columns());
 
       std::ranges::transform(values, base::begin(direction),

@@ -99,6 +99,8 @@ namespace cpp_utils {
                                                Coords2D const direction,
                                                std::function<bool(Coords2D)> valid_fn);
 
+  std::array<Coords2D, 4> get_direct_neighbour_coords(Coords2D const coords);
+
 }  // namespace cpp_utils
 
 // Specialize std::hash for Coords2D

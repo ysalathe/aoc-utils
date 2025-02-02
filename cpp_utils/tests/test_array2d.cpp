@@ -19,7 +19,7 @@ namespace {
 
   template <>
   cpp_utils::Array2DBase<int>* CreateArray2DBase<cpp_utils::Array2D<int>>() {
-    return new cpp_utils::Array2D<int>(2, 3, default_test_vec);
+    return new cpp_utils::Array2D<int>({2, 3}, default_test_vec);
   }
 
   template <>
@@ -32,12 +32,12 @@ namespace {
 
   template <>
   cpp_utils::Array2DBase<int>* CreateEmptyArray2DBase<cpp_utils::Array2D<int>>() {
-    return new cpp_utils::Array2D<int>(0, 0);
+    return new cpp_utils::Array2D<int>({0, 0});
   }
 
   template <>
   cpp_utils::Array2DBase<int>* CreateEmptyArray2DBase<cpp_utils::SparseArray2D<int>>() {
-    return new cpp_utils::SparseArray2D<int>(0, 0, 0);
+    return new cpp_utils::SparseArray2D<int>({0, 0}, 0);
   }
 
   // Then we define a test fixture class template.
@@ -312,7 +312,7 @@ namespace {
   }
 
   TEST(Array2DTest, Handles2DArrayWithDefaultValues) {
-    cpp_utils::Array2D<int> const array(2, 3, 0);
+    cpp_utils::Array2D<int> const array({2, 3}, 0);
     // The array looks like this:
     // 0 0 0
     // 0 0 0
