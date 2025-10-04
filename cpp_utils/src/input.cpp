@@ -2,7 +2,7 @@
 
 namespace cpp_utils {
 
-  std::optional<std::string> read_input_file_given_by_name(std::string const& filename) {
+  std::optional<std::string> readInputFileGivenByName(std::string const& filename) {
     std::ifstream file(filename);
     if (!file) {
       fmt::print(stderr, "Error opening file: {}\n", filename);
@@ -14,17 +14,17 @@ namespace cpp_utils {
     return buffer.str();
   }
 
-  std::optional<std::string> read_input_file_given_by_argument(int argc, char* argv[]) {
+  std::optional<std::string> readInputFileGivenByArgument(int argc, char* argv[]) {
     if (argc < 2) {
       fmt::print(stderr, "Usage: {} <filename>\n", argv[0]);
       return std::nullopt;
     }
 
-    return read_input_file_given_by_name(argv[1]);
+    return readInputFileGivenByName(argv[1]);
   }
 
-  std::vector<std::string_view> split_string(std::string_view const& str,
-                                             std::string_view const& delimiter) {
+  std::vector<std::string_view> splitString(std::string_view const& str,
+                                            std::string_view const& delimiter) {
     std::vector<std::string_view> parts;
     size_t start = 0;
     size_t end = str.find(delimiter);
@@ -39,7 +39,7 @@ namespace cpp_utils {
     return parts;
   }
 
-  std::vector<std::string_view> split_string(std::string_view const& str, char delimiter) {
-    return split_string(str, std::string(1, delimiter));
+  std::vector<std::string_view> splitString(std::string_view const& str, char delimiter) {
+    return splitString(str, std::string(1, delimiter));
   }
 }  // namespace cpp_utils

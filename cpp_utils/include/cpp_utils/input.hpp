@@ -11,13 +11,13 @@
 
 namespace cpp_utils {
 
-  std::optional<std::string> read_input_file_given_by_name(std::string const& filename);
+  std::optional<std::string> readInputFileGivenByName(std::string const& filename);
 
-  std::optional<std::string> read_input_file_given_by_argument(int argc, char* argv[]);
+  std::optional<std::string> readInputFileGivenByArgument(int argc, char* argv[]);
 
-  std::vector<std::string_view> split_string(std::string_view const& str,
-                                             std::string_view const& delimiter);
+  std::vector<std::string_view> splitString(std::string_view const& str,
+                                            std::string_view const& delimiter);
 
-  std::vector<std::string_view> split_string(std::string_view const& str, char delimiter);
+  std::vector<std::string_view> splitString(std::string_view const& str, char delimiter);
 
 }  // namespace cpp_utils

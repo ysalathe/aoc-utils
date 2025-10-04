@@ -608,7 +608,7 @@ namespace cpp_utils {
         std::string_view row_separator,
         std::string_view column_separator,
         std::function<T(std::string_view)> converter) {
-      auto lines = cpp_utils::split_string(input, row_separator);
+      auto lines = cpp_utils::splitString(input, row_separator);
       std::vector<std::vector<T>> result;
       std::ranges::transform(
           lines | std::views::filter([](auto const& line) { return !line.empty(); }),
@@ -618,7 +618,7 @@ namespace cpp_utils {
               std::transform(line.begin(), line.end(), std::back_inserter(row),
                              [converter](char c) { return converter(std::string(1, c)); });
             } else {
-              auto elements = cpp_utils::split_string(line, column_separator);
+              auto elements = cpp_utils::splitString(line, column_separator);
               std::ranges::transform(elements, std::back_inserter(row), converter);
             }
             return row;
