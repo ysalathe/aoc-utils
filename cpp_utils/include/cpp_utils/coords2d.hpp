@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 #include <cmath>
 #include <functional>
 #include <map>
@@ -17,14 +19,14 @@ namespace cpp_utils {
 
   Direction turn_right_90_degrees(Direction direction);
 
-  struct Coords2D : public std::pair<int, int> {
-    using std::pair<int, int>::pair;
+  struct Coords2D : public std::pair<int32_t, int32_t> {
+    using std::pair<int32_t, int32_t>::pair;
 
-    int& row() { return first; }
-    int row() const { return first; }
+    int32_t& row() { return first; }
+    int32_t row() const { return first; }
 
-    int& col() { return second; }
-    int col() const { return second; }
+    int32_t& col() { return second; }
+    int32_t col() const { return second; }
 
     Coords2D step_towards_direction(Direction direction) const;
 
@@ -44,24 +46,24 @@ namespace cpp_utils {
     }
 
     // multiplication with scalar
-    Coords2D operator*(int scalar) const { return Coords2D{first * scalar, second * scalar}; }
+    Coords2D operator*(int32_t scalar) const { return Coords2D{first * scalar, second * scalar}; }
 
     // unary negation
     Coords2D operator-() const { return Coords2D{-first, -second}; }
 
     // division by scalar
-    Coords2D operator/(int scalar) const { return Coords2D{first / scalar, second / scalar}; }
+    Coords2D operator/(int32_t scalar) const { return Coords2D{first / scalar, second / scalar}; }
 
     struct Hash {
       std::size_t operator()(const Coords2D& coords) const {
-        return std::hash<int>{}(coords.first) ^ std::hash<int>{}(coords.second);
+        return std::hash<int32_t>{}(coords.first) ^ std::hash<int32_t>{}(coords.second);
       }
     };
   };
 
   struct Coords2DHash {
     std::size_t operator()(Coords2D const& coords) const {
-      return std::hash<int>{}(coords.first) ^ std::hash<int>{}(coords.second);
+      return std::hash<int32_t>{}(coords.first) ^ std::hash<int32_t>{}(coords.second);
     }
   };
 
@@ -91,7 +93,7 @@ namespace cpp_utils {
 
   cpp_utils::Coords2D step_into_direction(const cpp_utils::Coords2D start_coord,
                                           const cpp_utils::Coords2D direction,
-                                          const int num_steps);
+                                          const int32_t num_steps);
 
   auto normalize_direction(Coords2D const direction);
 
