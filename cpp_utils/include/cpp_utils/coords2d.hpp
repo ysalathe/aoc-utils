@@ -19,16 +19,16 @@ namespace cpp_utils {
 
   Direction turn_right_90_degrees(Direction direction);
 
-  struct Coords2D : public std::array<int32_t, 2> {
-    using std::array<int32_t, 2>::array;
+  struct Coords2D : public std::array<int64_t, 2> {
+    using std::array<int64_t, 2>::array;
 
-    Coords2D(int32_t row, int32_t col) : std::array<int32_t, 2>{row, col} {}
+    Coords2D(int64_t row, int64_t col) : std::array<int64_t, 2>{row, col} {}
 
-    int32_t& row() { return (*this)[0]; }
-    int32_t row() const { return (*this)[0]; }
+    int64_t& row() { return (*this)[0]; }
+    int64_t row() const { return (*this)[0]; }
 
-    int32_t& col() { return (*this)[1]; }
-    int32_t col() const { return (*this)[1]; }
+    int64_t& col() { return (*this)[1]; }
+    int64_t col() const { return (*this)[1]; }
 
     Coords2D step_towards_direction(Direction direction) const;
 
@@ -48,7 +48,7 @@ namespace cpp_utils {
     }
 
     // multiplication with scalar
-    Coords2D operator*(int32_t scalar) const {
+    Coords2D operator*(int64_t scalar) const {
       return Coords2D{(*this)[0] * scalar, (*this)[1] * scalar};
     }
 
@@ -56,21 +56,21 @@ namespace cpp_utils {
     Coords2D operator-() const { return Coords2D{-(*this)[0], -(*this)[1]}; }
 
     // division by scalar
-    Coords2D operator/(int32_t scalar) const {
+    Coords2D operator/(int64_t scalar) const {
       return Coords2D{(*this)[0] / scalar, (*this)[1] / scalar};
     }
 
     // hash support
     struct Hash {
       std::size_t operator()(const Coords2D& coords) const {
-        return std::hash<int32_t>{}(coords[0]) ^ std::hash<int32_t>{}(coords[1]);
+        return std::hash<int64_t>{}(coords[0]) ^ std::hash<int64_t>{}(coords[1]);
       }
     };
   };
 
   struct Coords2DHash {
     std::size_t operator()(Coords2D const& coords) const {
-      return std::hash<int32_t>{}(coords[0]) ^ std::hash<int32_t>{}(coords[1]);
+      return std::hash<int64_t>{}(coords[0]) ^ std::hash<int64_t>{}(coords[1]);
     }
   };
 
@@ -100,7 +100,7 @@ namespace cpp_utils {
 
   cpp_utils::Coords2D step_into_direction(const cpp_utils::Coords2D start_coord,
                                           const cpp_utils::Coords2D direction,
-                                          const int32_t num_steps);
+                                          const int64_t num_steps);
 
   auto normalize_direction(Coords2D const direction);
 
