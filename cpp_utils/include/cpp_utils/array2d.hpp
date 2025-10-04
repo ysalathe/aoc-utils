@@ -71,13 +71,17 @@ namespace cpp_utils {
       return row >= 0 && row < num_rows_ && col >= 0 && col < num_columns_;
     }
     bool is_valid_index(Coords2D coords) const {
-      return is_valid_index(coords.first, coords.second);
+      return is_valid_index(coords.row(), coords.col());
     }
 
     Coords2D upper_left_corner() const { return Coords2D{0, 0}; }
-    Coords2D upper_right_corner() const { return Coords2D{0, num_columns_ - 1}; }
-    Coords2D lower_left_corner() const { return Coords2D{num_rows_ - 1, 0}; }
-    Coords2D lower_right_corner() const { return Coords2D{num_rows_ - 1, num_columns_ - 1}; }
+    Coords2D upper_right_corner() const {
+      return Coords2D{0, static_cast<int32_t>(num_columns_) - 1};
+    }
+    Coords2D lower_left_corner() const { return Coords2D{static_cast<int32_t>(num_rows_) - 1, 0}; }
+    Coords2D lower_right_corner() const {
+      return Coords2D{static_cast<int32_t>(num_rows_) - 1, static_cast<int32_t>(num_columns_) - 1};
+    }
 
     Coords2D step_coords_towards_direction(Coords2D coords,
                                            Direction direction,
@@ -298,13 +302,13 @@ namespace cpp_utils {
     Coords2D flatten_end_coords(Direction direction) const {
       switch (direction) {
         case Direction::East:
-          return {num_rows_, 0};
+          return {static_cast<int32_t>(num_rows_), 0};
         case Direction::South:
-          return {0, num_columns_};
+          return {0, static_cast<int32_t>(num_columns_)};
         case Direction::West:
-          return {-1, num_columns_ - 1};
+          return {-1, static_cast<int32_t>(num_columns_) - 1};
         case Direction::North:
-          return {num_rows_ - 1, -1};
+          return {static_cast<int32_t>(num_rows_) - 1, -1};
         default:
           throw DiagonalFlattenNotImplemented();
       }
@@ -314,40 +318,40 @@ namespace cpp_utils {
       Coords2D result;
       switch (direction) {
         case Direction::East:
-          result = {start_coords.first, num_columns_};
+          result = {start_coords.row(), static_cast<int32_t>(num_columns_)};
           break;
         case Direction::South:
-          result = {num_rows_, start_coords.second};
+          result = {static_cast<int32_t>(num_rows_), start_coords.col()};
           break;
         case Direction::West:
-          result = {start_coords.first, -1};
+          result = {start_coords.row(), -1};
           break;
         case Direction::North:
-          result = {-1, start_coords.second};
+          result = {-1, start_coords.col()};
           break;
         case Direction::SouthEast: {
-          int distance_to_right = num_columns_ - start_coords.second;
-          int distance_to_bottom = num_rows_ - start_coords.first;
+          int distance_to_right = num_columns_ - start_coords.col();
+          int distance_to_bottom = num_rows_ - start_coords.row();
           int distance = std::min(distance_to_right, distance_to_bottom);
-          result = {start_coords.first + distance, start_coords.second + distance};
+          result = {start_coords.row() + distance, start_coords.col() + distance};
         } break;
         case Direction::SouthWest: {
-          int distance_to_left = start_coords.second + 1;
-          int distance_to_bottom = num_rows_ - start_coords.first;
+          int distance_to_left = start_coords.col() + 1;
+          int distance_to_bottom = num_rows_ - start_coords.row();
           int distance = std::min(distance_to_left, distance_to_bottom);
-          result = {start_coords.first + distance, start_coords.second - distance};
+          result = {start_coords.row() + distance, start_coords.col() - distance};
         } break;
         case Direction::NorthWest: {
-          int distance_to_left = start_coords.second + 1;
-          int distance_to_top = start_coords.first + 1;
+          int distance_to_left = start_coords.col() + 1;
+          int distance_to_top = start_coords.row() + 1;
           int distance = std::min(distance_to_left, distance_to_top);
-          result = {start_coords.first - distance, start_coords.second - distance};
+          result = {start_coords.row() - distance, start_coords.col() - distance};
         } break;
         case Direction::NorthEast: {
-          int distance_to_right = num_columns_ - start_coords.second;
-          int distance_to_top = start_coords.first + 1;
+          int distance_to_right = num_columns_ - start_coords.col();
+          int distance_to_top = start_coords.row() + 1;
           int distance = std::min(distance_to_right, distance_to_top);
-          result = {start_coords.first - distance, start_coords.second + distance};
+          result = {start_coords.row() - distance, start_coords.col() + distance};
         } break;
       }
       return result;
@@ -394,10 +398,10 @@ namespace cpp_utils {
     }
 
     typename base::reference operator()(Coords2D coords) override {
-      return (*this)(coords.first, coords.second);
+      return (*this)(coords.row(), coords.col());
     }
     typename base::const_reference operator()(Coords2D coords) const override {
-      return (*this)(coords.first, coords.second);
+      return (*this)(coords.row(), coords.col());
     }
 
    private:
@@ -421,7 +425,7 @@ namespace cpp_utils {
       for (auto const [row, row_data] : std::views::enumerate(data)) {
         for (auto const [col, value] : std::views::enumerate(row_data)) {
           if (value != empty_element) {
-            data_[Coords2D{row, col}] = value;
+            data_[Coords2D{static_cast<int32_t>(row), static_cast<int32_t>(col)}] = value;
           }
         }
       }
@@ -471,10 +475,10 @@ namespace cpp_utils {
       return data_.at(coords);
     }
     typename base::reference operator()(Coords2D coords) override {
-      return (*this)(coords.first, coords.second);
+      return (*this)(coords.row(), coords.col());
     }
     typename base::const_reference operator()(Coords2D coords) const override {
-      return (*this)(coords.first, coords.second);
+      return (*this)(coords.row(), coords.col());
     }
 
     typename base::const_reference empty_element() const { return empty_element_; }
@@ -515,27 +519,27 @@ namespace cpp_utils {
     }
 
     std::optional<Coords2D> find_coords_of_non_empty_element_east(Coords2D const& coords) const {
-      // we can use that the map is ordered first by the first coordinate and then by the second
+      // we can use that the map is ordered row() by the row() coordinate and then by the col()
       auto it = data_.upper_bound(coords);
       if (it == data_.end()) {
         return std::nullopt;
       }
       const auto new_coords = it->first;
-      if (new_coords.first == coords.first && base::is_valid_index(new_coords)) {
+      if (new_coords.row() == coords.row() && base::is_valid_index(new_coords)) {
         return new_coords;
       }
       return std::nullopt;
     }
 
     std::optional<Coords2D> find_coords_of_non_empty_element_west(Coords2D const& coords) const {
-      // we can use that the map is ordered first by the first coordinate and then by the second
+      // we can use that the map is ordered row() by the row() coordinate and then by the col()
       auto it = data_.lower_bound(coords);
       it--;
       if (it == data_.end()) {
         return std::nullopt;
       }
       const auto new_coords = it->first;
-      if (new_coords.first == coords.first && base::is_valid_index(new_coords)) {
+      if (new_coords.row() == coords.row() && base::is_valid_index(new_coords)) {
         return new_coords;
       }
       return std::nullopt;

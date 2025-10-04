@@ -16,28 +16,28 @@ namespace cpp_utils {
     if (flatten) {
       switch (direction) {
         case Direction::East:
-          if (result.second == num_columns()) {
-            result.second = 0;
-            ++result.first;
+          if (result.col() == num_columns()) {
+            result.col() = 0;
+            ++result.row();
           }
           break;
         case Direction::South:
-          if (result.first == num_rows()) {
-            result.first = 0;
-            ++result.second;
+          if (result.row() == num_rows()) {
+            result.row() = 0;
+            ++result.col();
             ;
           }
           break;
         case Direction::West:
-          if (result.second == -1) {
-            result.second = num_columns() - 1;
-            --result.first;
+          if (result.col() == -1) {
+            result.col() = num_columns() - 1;
+            --result.row();
           }
           break;
         case Direction::North:
-          if (result.first == -1) {
-            result.first = num_rows() - 1;
-            --result.second;
+          if (result.row() == -1) {
+            result.row() = num_rows() - 1;
+            --result.col();
           }
           break;
         default:

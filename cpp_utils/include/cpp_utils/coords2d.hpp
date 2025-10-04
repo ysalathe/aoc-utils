@@ -19,66 +19,73 @@ namespace cpp_utils {
 
   Direction turn_right_90_degrees(Direction direction);
 
-  struct Coords2D : public std::pair<int32_t, int32_t> {
-    using std::pair<int32_t, int32_t>::pair;
+  struct Coords2D : public std::array<int32_t, 2> {
+    using std::array<int32_t, 2>::array;
 
-    int32_t& row() { return first; }
-    int32_t row() const { return first; }
+    Coords2D(int32_t row, int32_t col) : std::array<int32_t, 2>{row, col} {}
 
-    int32_t& col() { return second; }
-    int32_t col() const { return second; }
+    int32_t& row() { return (*this)[0]; }
+    int32_t row() const { return (*this)[0]; }
+
+    int32_t& col() { return (*this)[1]; }
+    int32_t col() const { return (*this)[1]; }
 
     Coords2D step_towards_direction(Direction direction) const;
 
     // equality
     bool operator==(Coords2D const& other) const {
-      return first == other.first && second == other.second;
+      return (*this)[0] == other[0] && (*this)[1] == other[1];
     }
 
     // subtraction
     Coords2D operator-(Coords2D const& other) const {
-      return Coords2D{first - other.first, second - other.second};
+      return Coords2D{(*this)[0] - other[0], (*this)[1] - other[1]};
     }
 
     // addition
     Coords2D operator+(Coords2D const& other) const {
-      return Coords2D{first + other.first, second + other.second};
+      return Coords2D{(*this)[0] + other[0], (*this)[1] + other[1]};
     }
 
     // multiplication with scalar
-    Coords2D operator*(int32_t scalar) const { return Coords2D{first * scalar, second * scalar}; }
+    Coords2D operator*(int32_t scalar) const {
+      return Coords2D{(*this)[0] * scalar, (*this)[1] * scalar};
+    }
 
     // unary negation
-    Coords2D operator-() const { return Coords2D{-first, -second}; }
+    Coords2D operator-() const { return Coords2D{-(*this)[0], -(*this)[1]}; }
 
     // division by scalar
-    Coords2D operator/(int32_t scalar) const { return Coords2D{first / scalar, second / scalar}; }
+    Coords2D operator/(int32_t scalar) const {
+      return Coords2D{(*this)[0] / scalar, (*this)[1] / scalar};
+    }
 
+    // hash support
     struct Hash {
       std::size_t operator()(const Coords2D& coords) const {
-        return std::hash<int32_t>{}(coords.first) ^ std::hash<int32_t>{}(coords.second);
+        return std::hash<int32_t>{}(coords[0]) ^ std::hash<int32_t>{}(coords[1]);
       }
     };
   };
 
   struct Coords2DHash {
     std::size_t operator()(Coords2D const& coords) const {
-      return std::hash<int32_t>{}(coords.first) ^ std::hash<int32_t>{}(coords.second);
+      return std::hash<int32_t>{}(coords[0]) ^ std::hash<int32_t>{}(coords[1]);
     }
   };
 
   struct Coords2DEqual {
     bool operator()(Coords2D const& lhs, Coords2D const& rhs) const {
-      return lhs.first == rhs.first && lhs.second == rhs.second;
+      return lhs[0] == rhs[0] && lhs[1] == rhs[1];
     }
   };
 
   struct Coords2DCompare {
     bool operator()(Coords2D const& lhs, Coords2D const& rhs) const {
-      if (lhs.first != rhs.first) {
-        return lhs.first < rhs.first;
+      if (lhs[0] != rhs[0]) {
+        return lhs[0] < rhs[0];
       } else {
-        return lhs.second < rhs.second;
+        return lhs[1] < rhs[1];
       }
     }
   };

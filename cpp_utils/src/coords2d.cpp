@@ -50,21 +50,21 @@ namespace cpp_utils {
   Coords2D Coords2D::step_towards_direction(Direction direction) const {
     switch (direction) {
       case Direction::East:
-        return Coords2D{first, second + 1};
+        return Coords2D{(*this)[0], (*this)[1] + 1};
       case Direction::SouthEast:
-        return Coords2D{first + 1, second + 1};
+        return Coords2D{(*this)[0] + 1, (*this)[1] + 1};
       case Direction::South:
-        return Coords2D{first + 1, second};
+        return Coords2D{(*this)[0] + 1, (*this)[1]};
       case Direction::SouthWest:
-        return Coords2D{first + 1, second - 1};
+        return Coords2D{(*this)[0] + 1, (*this)[1] - 1};
       case Direction::West:
-        return Coords2D{first, second - 1};
+        return Coords2D{(*this)[0], (*this)[1] - 1};
       case Direction::NorthWest:
-        return Coords2D{first - 1, second - 1};
+        return Coords2D{(*this)[0] - 1, (*this)[1] - 1};
       case Direction::North:
-        return Coords2D{first - 1, second};
+        return Coords2D{(*this)[0] - 1, (*this)[1]};
       case Direction::NorthEast:
-        return Coords2D{first - 1, second + 1};
+        return Coords2D{(*this)[0] - 1, (*this)[1] + 1};
       default:
         throw std::invalid_argument("Invalid direction");
     }
@@ -77,8 +77,8 @@ namespace cpp_utils {
   }
 
   auto normalize_direction(Coords2D const direction) {
-    auto const gcd = std::gcd(direction.first, direction.second);
-    return Coords2D{direction.first / gcd, direction.second / gcd};
+    auto const gcd = std::gcd(direction[0], direction[1]);
+    return Coords2D{direction[0] / gcd, direction[1] / gcd};
   }
 
   std::vector<Coords2D> get_all_coords_in_line(Coords2D const start_coord,

@@ -12,7 +12,7 @@ namespace fmt {
 
     template <typename FormatContext>
     auto format(const cpp_utils::Coords2D& coords, FormatContext& ctx) {
-      return fmt::format_to(ctx.out(), "({}, {})", coords.first, coords.second);
+      return fmt::format_to(ctx.out(), "({}, {})", coords.row(), coords.col());
     }
   };
 
