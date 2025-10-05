@@ -14,7 +14,7 @@ namespace cpp_utils {
     return buffer.str();
   }
 
-  std::optional<std::string> readInputFileGivenByArgument(int argc, char* argv[]) {
+  std::optional<std::string> readInputFileGivenByArgument(const int argc, char* argv[]) {
     if (argc < 2) {
       fmt::print(stderr, "Usage: {} <filename>\n", argv[0]);
       return std::nullopt;
