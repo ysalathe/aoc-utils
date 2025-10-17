@@ -30,16 +30,16 @@ namespace fmt {
 
   // Disable ranges formatter for Array2DBase and its derivatives
   template <typename Char, typename T>
-  struct fmt::range_format_kind<cpp_utils::Array2DBase<T>, Char>
-      : std::integral_constant<fmt::range_format, fmt::range_format::disabled> {};
+  struct range_format_kind<cpp_utils::Array2DBase<T>, Char>
+      : std::integral_constant<range_format, range_format::disabled> {};
 
   template <typename Char, typename T>
-  struct fmt::range_format_kind<cpp_utils::Array2D<T>, Char>
-      : std::integral_constant<fmt::range_format, fmt::range_format::disabled> {};
+  struct range_format_kind<cpp_utils::Array2D<T>, Char>
+      : std::integral_constant<range_format, range_format::disabled> {};
 
   template <typename Char, typename T>
-  struct fmt::range_format_kind<cpp_utils::SparseArray2D<T>, Char>
-      : std::integral_constant<fmt::range_format, fmt::range_format::disabled> {};
+  struct range_format_kind<cpp_utils::SparseArray2D<T>, Char>
+      : std::integral_constant<range_format, range_format::disabled> {};
 
   // Custom formatter for Array2DBase<T> and its derivatives
   template <typename T>
