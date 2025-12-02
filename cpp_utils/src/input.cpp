@@ -1,12 +1,13 @@
 #include <cpp_utils/input.hpp>
 
+#include <stdexcept>
+
 namespace cpp_utils {
 
-  std::optional<std::string> readInputFileGivenByName(std::string const& filename) {
+  std::string readInputFileGivenByName(std::string const& filename) {
     std::ifstream file(filename);
     if (!file) {
-      fmt::print(stderr, "Error opening file: {}\n", filename);
-      return std::nullopt;
+      throw std::runtime_error(fmt::format("Error opening file: {}", filename));
     }
 
     std::stringstream buffer;
@@ -14,13 +15,13 @@ namespace cpp_utils {
     return buffer.str();
   }
 
-  std::optional<std::string> readInputFileGivenByArgument(const int argc, char* argv[]) {
+  std::string readInputFileGivenByArgument(const int argc, char* argv[]) {
     if (argc < 2) {
-      fmt::print(stderr, "Usage: {} <filename>\n", argv[0]);
-      return std::nullopt;
+      throw std::invalid_argument(
+          fmt::format("Not enough arguments provided. Usage: {} <filename>\n", argv[0]));
     }
-
-    return readInputFileGivenByName(argv[1]);
+    std::string input = readInputFileGivenByName(argv[1]);
+    return input;
   }
 
   std::vector<std::string_view> splitString(std::string_view const& str,
