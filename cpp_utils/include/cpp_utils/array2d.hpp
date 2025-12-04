@@ -1,3 +1,10 @@
+// A generic 2D array implementation with support for dense and sparse arrays,
+// iterators in various directions, and utility functions.
+// TODO(YSA): Add more documentation, change to camel case for methods and variables and adapt the
+// existing code using this libary. NOTE: new methods should be added in camel case already.
+// TODO(YSA): Refactor iterators to use non-nested classes.
+// TODO(YSA): Idea: implement coordinate ranges to iterate over subregions of the array.
+
 #pragma once
 
 #include "coords2d.hpp"
@@ -138,6 +145,40 @@ namespace cpp_utils {
       }
 
       auto coords() const { return coords_; }
+
+      size_t numNeighbors(const T& value, bool diagonal) const {
+        // Counts the number neighbors with a given value
+        // Args:
+        //   value: The value to count as neighbor
+        //   diagonal: If true, diagonal neighbors are also counted. If false, only direct neighbors
+        //   (N, S, E, W) are counted.
+        // Returns:
+        //   The number of neighbors with the given value.
+        //
+        // Note: this function never flattens coordinates.
+        // TODO(YSA): Add unit test
+        constexpr std::array<Direction, 4> straightDirections =
+            std::to_array({Direction::North, Direction::South, Direction::East, Direction::West});
+        constexpr std::array<Direction, 4> diagonalDirections =
+            std::to_array({Direction::NorthEast, Direction::NorthWest, Direction::SouthEast,
+                           Direction::SouthWest});
+
+        auto countFunction = [&](Direction dir) {
+          Coords2D neighborCoords =
+              array_->step_coords_towards_direction(coords_, dir, false /* never flatten */);
+          if (!array_->is_valid_index(neighborCoords)) {
+            return false;
+          }
+          return (*array_)(neighborCoords) == value;
+        };
+
+        size_t count = std::ranges::count_if(straightDirections, countFunction);
+
+        if (diagonal) {
+          count += std::ranges::count_if(diagonalDirections, countFunction);
+        }
+        return count;
+      }
 
       // Pre-increment
       MyIterator& operator++() {
