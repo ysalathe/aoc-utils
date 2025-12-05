@@ -1,39 +1,33 @@
 // A generic 2D array implementation with support for dense and sparse arrays,
 // iterators in various directions, and utility functions.
-// TODO(YSA): Add more documentation, change to camel case for methods and variables and adapt the
-// existing code using this libary. NOTE: new methods should be added in camel case already.
-// TODO(YSA): Refactor iterators to use non-nested classes.
-// TODO(YSA): Idea: implement coordinate ranges to iterate over subregions of the array.
+// TODO(YSA): Idea: implement coordinate view that allows to get the coordinates instead of the
+// elements of the range
 
 #pragma once
 
+#include "array2d_iter.hpp"
+#include "array2d_range.hpp"
 #include "coords2d.hpp"
+#include "exceptions.hpp"
 #include "input.hpp"
 
 #include <algorithm>
 #include <cassert>
-#include <charconv>
 #include <cmath>
 #include <cstdint>
 #include <functional>
 #include <iterator>
-#include <map>
 #include <optional>
 #include <ranges>
 #include <span>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
 namespace cpp_utils {
-
-  struct Sentinel {};
 
   // Abstract base class for 2D arrays
   template <typename T>
@@ -44,19 +38,6 @@ namespace cpp_utils {
 
     using reference = T&;
     using const_reference = T const&;
-
-    // Exceptions
-    class NotImplementedError : public std::logic_error {
-     public:
-      NotImplementedError(std::string const& message) : std::logic_error(message) {}
-    };
-
-    class DiagonalFlattenNotImplemented : NotImplementedError {
-     public:
-      DiagonalFlattenNotImplemented()
-          : NotImplementedError(
-                "Combination of diagonal direction and flatten not yet implemented.") {}
-    };
 
     Array2DBase(std::tuple<size_t, size_t> dimensions)
         : num_rows_(std::get<0>(dimensions)), num_columns_(std::get<1>(dimensions)) {}
@@ -93,160 +74,10 @@ namespace cpp_utils {
     Coords2D step_coords_towards_direction(Coords2D coords,
                                            Direction direction,
                                            bool flatten = false) const;
-    template <bool IsConst>
-    class MyIterator {
-     public:
-      using iterator_category = std::bidirectional_iterator_tag;
-      using value_type = T;
-      using difference_type = int;
-      using pointer = typename std::conditional_t<IsConst,
-                                                  typename std::vector<T>::const_pointer,
-                                                  typename std::vector<T>::pointer>;
-      using reference = typename std::conditional_t<IsConst,
-                                                    typename std::vector<T>::const_reference,
-                                                    typename std::vector<T>::reference>;
-      using container_reference =
-          typename std::conditional_t<IsConst, Array2DBase<T> const&, Array2DBase<T>&>;
-      using container_pointer =
-          typename std::conditional_t<IsConst, Array2DBase<T> const*, Array2DBase<T>*>;
 
-      // Default constructor
-      MyIterator() = default;
-
-      MyIterator(container_reference array,
-                 Coords2D starting_point,
-                 Direction direction = default_direction,
-                 bool flatten = default_flatten)
-          : array_(&array), coords_(starting_point), direction(direction), flatten(flatten) {
-        if (flatten && (direction == Direction::NorthEast || direction == Direction::SouthWest ||
-                        direction == Direction::NorthWest || direction == Direction::SouthEast)) {
-          throw DiagonalFlattenNotImplemented();
-        }
-      }
-
-      Direction direction;
-      bool flatten;
-
-      auto const& operator*() const {
-        assert_not_null();
-        return (*array_)(coords_);
-      }
-
-      reference operator*()
-        requires(!IsConst)
-      {
-        assert_not_null();
-        return (*array_)(coords_);
-      }
-
-      pointer operator->() const {
-        assert_not_null();
-        return &(*array_)(coords_);
-      }
-
-      auto coords() const { return coords_; }
-
-      size_t numNeighbors(const T& value, bool diagonal) const {
-        // Counts the number neighbors with a given value
-        // Args:
-        //   value: The value to count as neighbor
-        //   diagonal: If true, diagonal neighbors are also counted. If false, only direct neighbors
-        //   (N, S, E, W) are counted.
-        // Returns:
-        //   The number of neighbors with the given value.
-        //
-        // Note: this function never flattens coordinates.
-        // TODO(YSA): Add unit test
-        constexpr std::array<Direction, 4> straightDirections =
-            std::to_array({Direction::North, Direction::South, Direction::East, Direction::West});
-        constexpr std::array<Direction, 4> diagonalDirections =
-            std::to_array({Direction::NorthEast, Direction::NorthWest, Direction::SouthEast,
-                           Direction::SouthWest});
-
-        auto countFunction = [&](Direction dir) {
-          Coords2D neighborCoords =
-              array_->step_coords_towards_direction(coords_, dir, false /* never flatten */);
-          if (!array_->is_valid_index(neighborCoords)) {
-            return false;
-          }
-          return (*array_)(neighborCoords) == value;
-        };
-
-        size_t count = std::ranges::count_if(straightDirections, countFunction);
-
-        if (diagonal) {
-          count += std::ranges::count_if(diagonalDirections, countFunction);
-        }
-        return count;
-      }
-
-      // Pre-increment
-      MyIterator& operator++() {
-        assert_not_null();
-        coords_ = array_->step_coords_towards_direction(coords_, direction, flatten);
-        return *this;
-      }
-
-      // Post-increment
-      MyIterator operator++(difference_type) {
-        assert_not_null();
-        MyIterator tmp = *this;
-        ++(*this);
-        return tmp;
-      }
-
-      // Pre-decrement
-      MyIterator& operator--() {
-        assert_not_null();
-        // Implement the reverse of step_coords_towards_direction
-        coords_ =
-            array_->step_coords_towards_direction(coords_, reverse_direction(direction), flatten);
-        return *this;
-      }
-
-      // Post-decrement
-      MyIterator operator--(difference_type) {
-        assert_not_null();
-        MyIterator tmp = *this;
-        --(*this);
-        return tmp;
-      }
-
-      MyIterator& operator+(difference_type n) {
-        assert_not_null();
-        for (difference_type k = 0; k < n; ++k) {
-          ++(*this);
-        }
-        return *this;
-      }
-
-      MyIterator& operator-(difference_type n) {
-        assert_not_null();
-        for (difference_type k = 0; k < n; ++k) {
-          --(*this);
-        }
-        return *this;
-      }
-
-      bool operator==(MyIterator const& other) const { return coords_ == other.coords_; }
-      bool operator==(Sentinel const&) const {
-        assert_not_null();
-        return !array_->is_valid_index(coords_);
-      }
-
-     private:
-      void assert_not_null() const {
-        if (array_ == nullptr) {
-          throw std::logic_error("Iterator is not initialized.");
-        }
-      }
-
-      container_pointer array_ = NULL;
-      Coords2D coords_;
-    };
-
-    using Iterator = MyIterator<false>;
-    using ConstIterator = MyIterator<true>;
+    // Iterator functions
+    using Iterator = Array2DIterator<Array2DBase, T, false>;
+    using ConstIterator = Array2DIterator<Array2DBase, T, true>;
 
     Iterator begin(Direction direction = default_direction) {
       return Iterator(*this, flatten_begin_coords(direction), direction, true);
@@ -262,55 +93,9 @@ namespace cpp_utils {
       return ConstIterator(*this, flatten_end_coords(direction), direction, true);
     }
 
-    template <bool IsConst>
-    class MyRange {
-      using container_reference =
-          typename std::conditional_t<IsConst, Array2DBase<T> const&, Array2DBase<T>&>;
-      using container_pointer =
-          typename std::conditional_t<IsConst, Array2DBase<T> const*, Array2DBase<T>*>;
-
-     public:
-      MyRange(container_reference array, Coords2D start_coords, Direction direction, bool flatten)
-          : array_(&array), start_coords_(start_coords), direction_(direction), flatten_(flatten) {}
-
-      ConstIterator begin() const {
-        return ConstIterator(*array_, start_coords_, direction_, flatten_);
-      }
-
-      Iterator begin()
-        requires(!IsConst)
-      {
-        return Iterator(*array_, start_coords_, direction_, flatten_);
-      }
-
-      ConstIterator end() const {
-        return ConstIterator(*array_, end_coords(), direction_, flatten_);
-      }
-
-      Iterator end()
-        requires(!IsConst)
-      {
-        return Iterator(*array_, end_coords(), direction_, flatten_);
-      }
-
-      Coords2D start_coords() const { return start_coords_; }
-      Coords2D end_coords() const {
-        if (flatten_) {
-          return array_->flatten_end_coords(direction_);
-        } else {
-          return array_->end_coords(start_coords_, direction_);
-        }
-      }
-
-     private:
-      container_pointer array_;
-      Coords2D start_coords_;
-      Direction direction_;
-      bool flatten_;
-    };
-
-    using Range = MyRange<false>;
-    using ConstRange = MyRange<true>;
+    // Range functions
+    using Range = Array2DRange<Array2DBase, T, false>;
+    using ConstRange = Array2DRange<Array2DBase, T, true>;
 
     Range range_from(Coords2D start_coords,
                      Direction direction = default_direction,
@@ -325,6 +110,9 @@ namespace cpp_utils {
     }
 
    private:
+    friend class Array2DRange<Array2DBase, T, false>;
+    friend class Array2DRange<Array2DBase, T, true>;
+
     Coords2D flatten_begin_coords(Direction direction) const {
       switch (direction) {
         case Direction::East:
