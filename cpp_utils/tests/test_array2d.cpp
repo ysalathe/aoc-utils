@@ -1,11 +1,11 @@
 // main.cpp
 #include <cpp_utils/array2d.hpp>
+#include <cpp_utils/array2d_builder.hpp>
 #include <cpp_utils/array2d_formatter.hpp>
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include <algorithm>
-#include <ranges>
 #include <utility>
 
 namespace {

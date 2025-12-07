@@ -11,7 +11,7 @@ target_include_directories(${PROJECT_NAME} INTERFACE include)
 # Add soures to target
 target_sources(${PROJECT_NAME}
 PUBLIC
-src/array2d.cpp
+src/array2d_builder.cpp
 src/coords2d.cpp
 src/input.cpp)
 

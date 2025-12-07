@@ -1,4 +1,4 @@
-#include <cpp_utils/array2d.hpp>
+#include <cpp_utils/array2d_builder.hpp>
 
 namespace cpp_utils {
   template <>
