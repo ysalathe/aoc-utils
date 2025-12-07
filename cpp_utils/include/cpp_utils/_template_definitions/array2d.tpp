@@ -7,6 +7,79 @@
 
 namespace cpp_utils {
 
+  // Iterator functions that flatten the array
+  template <typename T>
+  Array2DBase<T>::Iterator Array2DBase<T>::begin(Direction direction) {
+    return Iterator(*this, flatten_begin_coords(direction), direction, true);
+  }
+  template <typename T>
+  Array2DBase<T>::ConstIterator Array2DBase<T>::begin(Direction direction) const {
+    return ConstIterator(*this, flatten_begin_coords(direction), direction, true);
+  }
+  template <typename T>
+  Array2DBase<T>::Iterator Array2DBase<T>::end(Direction direction) {
+    return Iterator(*this, flatten_end_coords(direction), direction, true);
+  }
+  template <typename T>
+  Array2DBase<T>::ConstIterator Array2DBase<T>::end(Direction direction) const {
+    return ConstIterator(*this, flatten_end_coords(direction), direction, true);
+  }
+
+  // Iterators for specific rows
+  template <typename T>
+  Array2DBase<T>::Iterator Array2DBase<T>::begin_row(int rowIdx) {
+    if (rowIdx >= num_rows_) {
+      throw std::out_of_range("Row index out of range");
+    }
+    return Iterator(*this, Coords2D{rowIdx, 0}, Direction::East, false);
+  }
+  template <typename T>
+  Array2DBase<T>::ConstIterator Array2DBase<T>::begin_row(int rowIdx) const {
+    if (rowIdx >= num_rows_) {
+      throw std::out_of_range("Row index out of range");
+    }
+    return ConstIterator(*this, Coords2D{rowIdx, 0}, Direction::East, false);
+  }
+  template <typename T>
+  Array2DBase<T>::Iterator Array2DBase<T>::end_row(int rowIdx) {
+    if (rowIdx >= num_rows_) {
+      throw std::out_of_range("Row index out of range");
+    }
+    return Iterator(*this, end_coords(Coords2D{rowIdx, 0}), Direction::East, false);
+  }
+  template <typename T>
+  Array2DBase<T>::ConstIterator Array2DBase<T>::end_row(int rowIdx) const {
+    if (rowIdx >= num_rows_) {
+      throw std::out_of_range("Row index out of range");
+    }
+    return ConstIterator(*this, end_coords(Coords2D{rowIdx, 0}), Direction::East, false);
+  }
+
+  // Range functions
+  template <typename T>
+  Array2DBase<T>::Range Array2DBase<T>::range_from(Coords2D start_coords,
+                                                   Direction direction,
+                                                   bool flatten) {
+    return Range(*this, start_coords, direction, flatten);
+  }
+
+  template <typename T>
+  Array2DBase<T>::ConstRange Array2DBase<T>::range_from(Coords2D start_coords,
+                                                        Direction direction,
+                                                        bool flatten) const {
+    return ConstRange(*this, start_coords, direction, flatten);
+  }
+
+  template <typename T>
+  Array2DBase<T>::Range Array2DBase<T>::row_range(int rowIdx, int startCol) {
+    return Range(*this, Coords2D{rowIdx, startCol}, Direction::East, false);
+  }
+
+  template <typename T>
+  Array2DBase<T>::ConstRange Array2DBase<T>::row_range(int rowIdx, int startCol) const {
+    return ConstRange(*this, Coords2D{rowIdx, startCol}, Direction::East, false);
+  }
+
   template <typename T>
   Coords2D Array2DBase<T>::step_coords_towards_direction(Coords2D coords,
                                                          Direction direction,

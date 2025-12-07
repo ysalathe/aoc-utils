@@ -2,6 +2,8 @@
 // iterators in various directions, and utility functions.
 // TODO(YSA): Idea: implement coordinate view that allows to get the coordinates instead of the
 // elements of the range
+// TODO(YSA): Change type of indices from int to size_t where applicable.
+// -- Turn Coords2D into template and use size_t instead of int64_t?
 
 #pragma once
 
@@ -75,23 +77,20 @@ namespace cpp_utils {
                                            Direction direction,
                                            bool flatten = false) const;
 
-    // Iterator functions
     using Iterator = Array2DIterator<Array2DBase, T, false>;
     using ConstIterator = Array2DIterator<Array2DBase, T, true>;
 
-    Iterator begin(Direction direction = default_direction) {
-      return Iterator(*this, flatten_begin_coords(direction), direction, true);
-    }
-    ConstIterator begin(Direction direction = default_direction) const {
-      return ConstIterator(*this, flatten_begin_coords(direction), direction, true);
-    }
+    // Iterator functions that flatten the array
+    Iterator begin(Direction direction = default_direction);
+    ConstIterator begin(Direction direction = default_direction) const;
+    Iterator end(Direction direction = default_direction);
+    ConstIterator end(Direction direction = default_direction) const;
 
-    Iterator end(Direction direction = default_direction) {
-      return Iterator(*this, flatten_end_coords(direction), direction, true);
-    }
-    ConstIterator end(Direction direction = default_direction) const {
-      return ConstIterator(*this, flatten_end_coords(direction), direction, true);
-    }
+    // Iterators for specific rows
+    Iterator begin_row(int rowIdx);
+    ConstIterator begin_row(int rowIdx) const;
+    Iterator end_row(int rowIdx);
+    ConstIterator end_row(int rowIdx) const;
 
     // Range functions
     using Range = Array2DRange<Array2DBase, T, false>;
@@ -99,15 +98,13 @@ namespace cpp_utils {
 
     Range range_from(Coords2D start_coords,
                      Direction direction = default_direction,
-                     bool flatten = default_flatten) {
-      return Range(*this, start_coords, direction, flatten);
-    }
-
+                     bool flatten = default_flatten);
     ConstRange range_from(Coords2D start_coords,
                           Direction direction = default_direction,
-                          bool flatten = default_flatten) const {
-      return ConstRange(*this, start_coords, direction, flatten);
-    }
+                          bool flatten = default_flatten) const;
+
+    Range row_range(int rowIdx, int startCol = 0);
+    ConstRange row_range(int rowIdx, int startCol = 0) const;
 
    private:
     friend class Array2DRange<Array2DBase, T, false>;
