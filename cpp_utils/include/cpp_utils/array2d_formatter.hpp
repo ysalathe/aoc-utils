@@ -16,8 +16,8 @@ namespace _array2d_formatter_detail {
     auto format(const T& array, FormatContext& ctx) const -> decltype(ctx.out()) {
       auto result =
           fmt::format_to(ctx.out(), "Array2DBase({}x{})\n", array.num_rows(), array.num_columns());
-      for (int row = 0; row < array.num_rows(); ++row) {
-        auto row_range = array.range_from({row, 0});
+      for (size_t row = 0; row < array.num_rows(); ++row) {
+        auto row_range = array.range_from({static_cast<cpp_utils::Array2DDim>(row), 0});
         result = fmt::format_to(ctx.out(), "{}\n", fmt::join(row_range, " "));
       }
       return result;

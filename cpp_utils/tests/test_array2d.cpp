@@ -301,7 +301,7 @@ namespace {
   TYPED_TEST(Array2DBaseTest, StdFindWorks) {
     auto it = std::ranges::find(std::as_const(*(this->array_)), 3);
     EXPECT_EQ(*it, 3);
-    EXPECT_EQ(it.coords(), cpp_utils::Coords2D(0, 2));
+    EXPECT_EQ(it.coords(), cpp_utils::Array2DCoords(0, 2));
   }
 
   // Specialized tests for Array2D

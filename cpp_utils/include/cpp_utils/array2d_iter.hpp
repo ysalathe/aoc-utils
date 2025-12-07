@@ -27,11 +27,15 @@ namespace cpp_utils {
     using container_reference = typename std::conditional_t<IsConst, C const&, C&>;
     using container_pointer = typename std::conditional_t<IsConst, C const*, C*>;
 
+    // Signed coordantes are used to represent boundaries in iterators (e.g., -1 for before the
+    // first row)
+    using Coords = Coords2D<int64_t>;
+
     // Default constructor
     Array2DIterator() = default;
 
     Array2DIterator(container_reference array,
-                    Coords2D starting_point,
+                    Coords starting_point,
                     Direction direction,
                     bool flatten)
         : array_(&array), coords_(starting_point), direction(direction), flatten(flatten) {
@@ -80,7 +84,7 @@ namespace cpp_utils {
           {Direction::NorthEast, Direction::NorthWest, Direction::SouthEast, Direction::SouthWest});
 
       auto countFunction = [&](Direction dir) {
-        Coords2D neighborCoords =
+        Coords neighborCoords =
             array_->step_coords_towards_direction(coords_, dir, false /* never flatten */);
         if (!array_->is_valid_index(neighborCoords)) {
           return false;
@@ -158,7 +162,7 @@ namespace cpp_utils {
     }
 
     container_pointer array_ = NULL;
-    Coords2D coords_;
+    Coords coords_;
   };
 
 }  // namespace cpp_utils

@@ -2,8 +2,6 @@
 // iterators in various directions, and utility functions.
 // TODO(YSA): Idea: implement coordinate view that allows to get the coordinates instead of the
 // elements of the range
-// TODO(YSA): Change type of indices from int to size_t where applicable.
-// -- Turn Coords2D into template and use size_t instead of int64_t?
 
 #pragma once
 
@@ -31,6 +29,11 @@
 
 namespace cpp_utils {
 
+  // Signed coordantes are used to represent boundaries in iterators (e.g., -1 for before the first
+  // row)
+  using Array2DDim = int64_t;
+  using Array2DCoords = Coords2D<Array2DDim>;
+
   // Abstract base class for 2D arrays
   template <typename T>
   class Array2DBase {
@@ -42,40 +45,43 @@ namespace cpp_utils {
     using const_reference = T const&;
 
     Array2DBase(std::tuple<size_t, size_t> dimensions)
-        : num_rows_(std::get<0>(dimensions)), num_columns_(std::get<1>(dimensions)) {}
+        : num_rows_{std::get<0>(dimensions)}, num_columns_{std::get<1>(dimensions)} {}
 
     virtual ~Array2DBase() = default;
 
-    virtual reference operator()(int row, int col) = 0;
-    virtual const_reference operator()(int row, int col) const = 0;
+    virtual reference operator()(size_t row, size_t col) = 0;
+    virtual const_reference operator()(size_t row, size_t col) const = 0;
 
-    virtual reference operator()(Coords2D coords) = 0;
-    virtual const_reference operator()(Coords2D coords) const = 0;
+    virtual reference operator()(Array2DCoords coords) = 0;
+    virtual const_reference operator()(Array2DCoords coords) const = 0;
 
     size_t num_rows() const { return num_rows_; }
     size_t num_columns() const { return num_columns_; }
 
     std::tuple<size_t, size_t> dimensions() const { return {num_rows_, num_columns_}; }
 
-    bool is_valid_index(int row, int col) const {
+    bool is_valid_index(size_t row, size_t col) const {
       return row >= 0 && row < num_rows_ && col >= 0 && col < num_columns_;
     }
-    bool is_valid_index(Coords2D coords) const {
+    bool is_valid_index(Array2DCoords coords) const {
       return is_valid_index(coords.row(), coords.col());
     }
 
-    Coords2D upper_left_corner() const { return Coords2D{0, 0}; }
-    Coords2D upper_right_corner() const {
-      return Coords2D{0, static_cast<int32_t>(num_columns_) - 1};
+    Array2DCoords upper_left_corner() const { return Array2DCoords{0, 0}; }
+    Array2DCoords upper_right_corner() const {
+      return Array2DCoords{0, static_cast<Array2DDim>(num_columns_) - 1};
     }
-    Coords2D lower_left_corner() const { return Coords2D{static_cast<int32_t>(num_rows_) - 1, 0}; }
-    Coords2D lower_right_corner() const {
-      return Coords2D{static_cast<int32_t>(num_rows_) - 1, static_cast<int32_t>(num_columns_) - 1};
+    Array2DCoords lower_left_corner() const {
+      return Array2DCoords{static_cast<Array2DDim>(num_rows_) - 1, 0};
+    }
+    Array2DCoords lower_right_corner() const {
+      return Array2DCoords{static_cast<Array2DDim>(num_rows_) - 1,
+                           static_cast<Array2DDim>(num_columns_) - 1};
     }
 
-    Coords2D step_coords_towards_direction(Coords2D coords,
-                                           Direction direction,
-                                           bool flatten = false) const;
+    Array2DCoords step_coords_towards_direction(Array2DCoords coords,
+                                                Direction direction,
+                                                bool flatten = false) const;
 
     using Iterator = Array2DIterator<Array2DBase, T, false>;
     using ConstIterator = Array2DIterator<Array2DBase, T, true>;
@@ -87,30 +93,30 @@ namespace cpp_utils {
     ConstIterator end(Direction direction = default_direction) const;
 
     // Iterators for specific rows
-    Iterator begin_row(int rowIdx);
-    ConstIterator begin_row(int rowIdx) const;
-    Iterator end_row(int rowIdx);
-    ConstIterator end_row(int rowIdx) const;
+    Iterator begin_row(size_t rowIdx);
+    ConstIterator begin_row(size_t rowIdx) const;
+    Iterator end_row(size_t rowIdx);
+    ConstIterator end_row(size_t rowIdx) const;
 
     // Range functions
     using Range = Array2DRange<Array2DBase, T, false>;
     using ConstRange = Array2DRange<Array2DBase, T, true>;
 
-    Range range_from(Coords2D start_coords,
+    Range range_from(Array2DCoords start_coords,
                      Direction direction = default_direction,
                      bool flatten = default_flatten);
-    ConstRange range_from(Coords2D start_coords,
+    ConstRange range_from(Array2DCoords start_coords,
                           Direction direction = default_direction,
                           bool flatten = default_flatten) const;
 
-    Range row_range(int rowIdx, int startCol = 0);
-    ConstRange row_range(int rowIdx, int startCol = 0) const;
+    Range row_range(size_t rowIdx, int startCol = 0);
+    ConstRange row_range(size_t rowIdx, int startCol = 0) const;
 
    private:
     friend class Array2DRange<Array2DBase, T, false>;
     friend class Array2DRange<Array2DBase, T, true>;
 
-    Coords2D flatten_begin_coords(Direction direction) const {
+    Array2DCoords flatten_begin_coords(Direction direction) const {
       switch (direction) {
         case Direction::East:
           return upper_left_corner();
@@ -125,29 +131,29 @@ namespace cpp_utils {
       }
     }
 
-    Coords2D flatten_end_coords(Direction direction) const {
+    Array2DCoords flatten_end_coords(Direction direction) const {
       switch (direction) {
         case Direction::East:
-          return {static_cast<int32_t>(num_rows_), 0};
+          return {static_cast<Array2DDim>(num_rows_), 0};
         case Direction::South:
-          return {0, static_cast<int32_t>(num_columns_)};
+          return {0, static_cast<Array2DDim>(num_columns_)};
         case Direction::West:
-          return {-1, static_cast<int32_t>(num_columns_) - 1};
+          return {-1, static_cast<Array2DDim>(num_columns_) - 1};
         case Direction::North:
-          return {static_cast<int32_t>(num_rows_) - 1, -1};
+          return {static_cast<Array2DDim>(num_rows_) - 1, -1};
         default:
           throw DiagonalFlattenNotImplemented();
       }
     }
 
-    Coords2D end_coords(Coords2D start_coords, Direction direction) const {
-      Coords2D result;
+    Array2DCoords end_coords(Array2DCoords start_coords, Direction direction) const {
+      Array2DCoords result;
       switch (direction) {
         case Direction::East:
-          result = {start_coords.row(), static_cast<int32_t>(num_columns_)};
+          result = {start_coords.row(), static_cast<Array2DDim>(num_columns_)};
           break;
         case Direction::South:
-          result = {static_cast<int32_t>(num_rows_), start_coords.col()};
+          result = {static_cast<Array2DDim>(num_rows_), start_coords.col()};
           break;
         case Direction::West:
           result = {start_coords.row(), -1};
@@ -218,15 +224,17 @@ namespace cpp_utils {
                              [](auto const& value) { return value; });
     }
 
-    typename base::reference operator()(int row, int col) override { return data_.at(row).at(col); }
-    typename base::const_reference operator()(int row, int col) const override {
+    typename base::reference operator()(size_t row, size_t col) override {
+      return data_.at(row).at(col);
+    }
+    typename base::const_reference operator()(size_t row, size_t col) const override {
       return data_.at(row).at(col);
     }
 
-    typename base::reference operator()(Coords2D coords) override {
+    typename base::reference operator()(Array2DCoords coords) override {
       return (*this)(coords.row(), coords.col());
     }
-    typename base::const_reference operator()(Coords2D coords) const override {
+    typename base::const_reference operator()(Array2DCoords coords) const override {
       return (*this)(coords.row(), coords.col());
     }
 
@@ -251,7 +259,7 @@ namespace cpp_utils {
       for (auto const [row, row_data] : std::views::enumerate(data)) {
         for (auto const [col, value] : std::views::enumerate(row_data)) {
           if (value != empty_element) {
-            data_[Coords2D{static_cast<int32_t>(row), static_cast<int32_t>(col)}] = value;
+            data_[Array2DCoords{static_cast<Array2DDim>(row), Array2DDim(col)}] = value;
           }
         }
       }
@@ -284,26 +292,26 @@ namespace cpp_utils {
       cleanup();
     }
 
-    typename base::reference operator()(int row, int col) override {
+    typename base::reference operator()(size_t row, size_t col) override {
       cleanup();
-      auto coords = Coords2D{row, col};
+      auto coords = Array2DCoords{static_cast<Array2DDim>(row), Array2DDim(col)};
       auto [_, inserted] = data_.emplace(coords, empty_element_);
       if (inserted) {
         cleanup_coords_ = coords;
       }
       return data_[coords];
     }
-    typename base::const_reference operator()(int row, int col) const override {
-      auto coords = Coords2D{row, col};
+    typename base::const_reference operator()(size_t row, size_t col) const override {
+      auto coords = Array2DCoords{static_cast<Array2DDim>(row), Array2DDim(col)};
       if (!data_.contains(coords)) {
         return empty_element_;
       }
       return data_.at(coords);
     }
-    typename base::reference operator()(Coords2D coords) override {
+    typename base::reference operator()(Array2DCoords coords) override {
       return (*this)(coords.row(), coords.col());
     }
-    typename base::const_reference operator()(Coords2D coords) const override {
+    typename base::const_reference operator()(Array2DCoords coords) const override {
       return (*this)(coords.row(), coords.col());
     }
 
@@ -321,12 +329,12 @@ namespace cpp_utils {
       cleanup_coords_.reset();
     }
 
-    bool is_empty(Coords2D const& coords) const {
+    bool is_empty(Array2DCoords const& coords) const {
       return !data_.contains(coords) || data_.at(coords) == empty_element_;
     }
 
-    std::optional<Coords2D> find_coords_of_non_empty_element_in_direction(
-        Coords2D const& coords,
+    std::optional<Array2DCoords> find_coords_of_non_empty_element_in_direction(
+        Array2DCoords const& coords,
         Direction direction) const {
       switch (direction) {
         case Direction::South:
@@ -344,7 +352,8 @@ namespace cpp_utils {
       }
     }
 
-    std::optional<Coords2D> find_coords_of_non_empty_element_east(Coords2D const& coords) const {
+    std::optional<Array2DCoords> find_coords_of_non_empty_element_east(
+        Array2DCoords const& coords) const {
       // we can use that the map is ordered row() by the row() coordinate and then by the col()
       auto it = data_.upper_bound(coords);
       if (it == data_.end()) {
@@ -357,7 +366,8 @@ namespace cpp_utils {
       return std::nullopt;
     }
 
-    std::optional<Coords2D> find_coords_of_non_empty_element_west(Coords2D const& coords) const {
+    std::optional<Array2DCoords> find_coords_of_non_empty_element_west(
+        Array2DCoords const& coords) const {
       // we can use that the map is ordered row() by the row() coordinate and then by the col()
       auto it = data_.lower_bound(coords);
       it--;
@@ -371,34 +381,38 @@ namespace cpp_utils {
       return std::nullopt;
     }
 
-    std::optional<Coords2D> find_coords_of_non_empty_element_south(Coords2D const& coords) const {
+    std::optional<Array2DCoords> find_coords_of_non_empty_element_south(
+        Array2DCoords const& coords) const {
       auto row = coords.row() + 1;
       auto column = coords.col();
-      while (base::is_valid_index(row, column) && is_empty(Coords2D{row, column})) {
+      while (base::is_valid_index(row, column) &&
+             is_empty(Array2DCoords{static_cast<Array2DDim>(row), Array2DDim(column)})) {
         row++;
       }
       if (base::is_valid_index(row, column)) {
-        return Coords2D{row, column};
+        return Array2DCoords{static_cast<Array2DDim>(row), Array2DDim(column)};
       }
       return std::nullopt;
     }
 
-    std::optional<Coords2D> find_coords_of_non_empty_element_north(Coords2D const& coords) const {
+    std::optional<Array2DCoords> find_coords_of_non_empty_element_north(
+        Array2DCoords const& coords) const {
       auto row = coords.row() - 1;
       auto column = coords.col();
-      while (base::is_valid_index(row, column) && is_empty(Coords2D{row, column})) {
+      while (base::is_valid_index(row, column) &&
+             is_empty(Array2DCoords{static_cast<Array2DDim>(row), Array2DDim(column)})) {
         row--;
       }
       if (base::is_valid_index(row, column)) {
-        return Coords2D{row, column};
+        return Array2DCoords{static_cast<Array2DDim>(row), Array2DDim(column)};
       }
       return std::nullopt;
     }
 
    private:
-    Coords2DMap<T> data_;
+    Coords2DMap<Array2DDim, T> data_;
     T empty_element_;
-    std::optional<Coords2D> cleanup_coords_;
+    std::optional<Array2DCoords> cleanup_coords_;
   };
 
   // Builders for Array2D and SparseArray2D

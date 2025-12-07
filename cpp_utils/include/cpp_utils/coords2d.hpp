@@ -19,16 +19,17 @@ namespace cpp_utils {
 
   Direction turn_right_90_degrees(Direction direction);
 
-  struct Coords2D : public std::array<int64_t, 2> {
-    using std::array<int64_t, 2>::array;
+  template <typename T>
+  struct Coords2D : public std::array<T, 2> {
+    using std::array<T, 2>::array;
 
-    Coords2D(int64_t row, int64_t col) : std::array<int64_t, 2>{row, col} {}
+    Coords2D(T row, T col) : std::array<T, 2>{row, col} {}
 
-    int64_t& row() { return (*this)[0]; }
-    int64_t row() const { return (*this)[0]; }
+    T& row() { return (*this)[0]; }
+    T row() const { return (*this)[0]; }
 
-    int64_t& col() { return (*this)[1]; }
-    int64_t col() const { return (*this)[1]; }
+    T& col() { return (*this)[1]; }
+    T col() const { return (*this)[1]; }
 
     Coords2D step_towards_direction(Direction direction) const;
 
@@ -48,7 +49,7 @@ namespace cpp_utils {
     }
 
     // multiplication with scalar
-    Coords2D operator*(int64_t scalar) const {
+    Coords2D operator*(T scalar) const {
       return Coords2D{(*this)[0] * scalar, (*this)[1] * scalar};
     }
 
@@ -56,32 +57,35 @@ namespace cpp_utils {
     Coords2D operator-() const { return Coords2D{-(*this)[0], -(*this)[1]}; }
 
     // division by scalar
-    Coords2D operator/(int64_t scalar) const {
+    Coords2D operator/(T scalar) const {
       return Coords2D{(*this)[0] / scalar, (*this)[1] / scalar};
     }
 
     // hash support
     struct Hash {
       std::size_t operator()(const Coords2D& coords) const {
-        return std::hash<int64_t>{}(coords[0]) ^ std::hash<int64_t>{}(coords[1]);
+        return std::hash<T>{}(coords[0]) ^ std::hash<T>{}(coords[1]);
       }
     };
   };
 
+  template <typename T>
   struct Coords2DHash {
-    std::size_t operator()(Coords2D const& coords) const {
-      return std::hash<int64_t>{}(coords[0]) ^ std::hash<int64_t>{}(coords[1]);
+    std::size_t operator()(Coords2D<T> const& coords) const {
+      return std::hash<T>{}(coords[0]) ^ std::hash<T>{}(coords[1]);
     }
   };
 
+  template <typename T>
   struct Coords2DEqual {
-    bool operator()(Coords2D const& lhs, Coords2D const& rhs) const {
+    bool operator()(Coords2D<T> const& lhs, Coords2D<T> const& rhs) const {
       return lhs[0] == rhs[0] && lhs[1] == rhs[1];
     }
   };
 
+  template <typename T>
   struct Coords2DCompare {
-    bool operator()(Coords2D const& lhs, Coords2D const& rhs) const {
+    bool operator()(Coords2D<T> const& lhs, Coords2D<T> const& rhs) const {
       if (lhs[0] != rhs[0]) {
         return lhs[0] < rhs[0];
       } else {
@@ -90,32 +94,50 @@ namespace cpp_utils {
     }
   };
 
-  using Coords2DUnorderedSet = std::unordered_set<Coords2D, Coords2DHash, Coords2DEqual>;
+  template <typename T>
+  using Coords2DUnorderedSet = std::unordered_set<Coords2D<T>, Coords2DHash<T>, Coords2DEqual<T>>;
+
+  template <typename T, typename U>
+  using Coords2DUnorderedMap =
+      std::unordered_map<Coords2D<T>, U, Coords2DHash<T>, Coords2DEqual<T>>;
+
+  template <typename T, typename U>
+  using Coords2DMap = std::map<Coords2D<T>, U, Coords2DCompare<T>>;
 
   template <typename T>
-  using Coords2DUnorderedMap = std::unordered_map<Coords2D, T, Coords2DHash, Coords2DEqual>;
+  cpp_utils::Coords2D<T> step_into_direction(const cpp_utils::Coords2D<T> start_coord,
+                                             const cpp_utils::Coords2D<T> direction,
+                                             const T num_steps);
 
   template <typename T>
-  using Coords2DMap = std::map<Coords2D, T, Coords2DCompare>;
+  auto normalize_direction(Coords2D<T> const direction);
 
-  cpp_utils::Coords2D step_into_direction(const cpp_utils::Coords2D start_coord,
-                                          const cpp_utils::Coords2D direction,
-                                          const int64_t num_steps);
+  template <typename T>
+  std::vector<Coords2D<T>> get_all_coords_in_line(Coords2D<T> const start_coord,
+                                                  Coords2D<T> const direction,
+                                                  std::function<bool(Coords2D<T>)> valid_fn);
 
-  auto normalize_direction(Coords2D const direction);
-
-  std::vector<Coords2D> get_all_coords_in_line(Coords2D const start_coord,
-                                               Coords2D const direction,
-                                               std::function<bool(Coords2D)> valid_fn);
-
-  std::array<Coords2D, 4> get_direct_neighbour_coords(Coords2D const coords);
+  template <typename T>
+  std::array<Coords2D<T>, 4> get_direct_neighbour_coords(Coords2D<T> const coords);
 
 }  // namespace cpp_utils
 
-// Specialize std::hash for Coords2D
+// Specialize std::hash for Coords2D with size_t
 template <>
-struct std::hash<cpp_utils::Coords2D> {
-  std::size_t operator()(const cpp_utils::Coords2D& coords) const {
-    return cpp_utils::Coords2D::Hash{}(coords);
+struct std::hash<cpp_utils::Coords2D<size_t>> {
+  using Coords2D = cpp_utils::Coords2D<size_t>;
+  std::size_t operator()(const cpp_utils::Coords2D<size_t>& coords) const {
+    return Coords2D::Hash{}(coords);
   }
 };
+
+// Specialize std::hash for Coords2D with int64_t
+template <>
+struct std::hash<cpp_utils::Coords2D<int64_t>> {
+  using Coords2D = cpp_utils::Coords2D<int64_t>;
+  std::size_t operator()(const cpp_utils::Coords2D<int64_t>& coords) const {
+    return Coords2D::Hash{}(coords);
+  }
+};
+
+#include "_template_definitions/coords2d.tpp"
