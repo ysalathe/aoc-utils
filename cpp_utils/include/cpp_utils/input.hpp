@@ -20,4 +20,10 @@ namespace cpp_utils {
 
   std::vector<std::string_view> splitString(std::string_view const& str, char delimiter);
 
+  std::string_view ltrim(std::string_view sv);
+
+  std::string_view rtrim(std::string_view sv);
+
+  std::string_view trim(std::string_view sv);
+
 }  // namespace cpp_utils

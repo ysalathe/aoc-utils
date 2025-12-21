@@ -43,4 +43,24 @@ namespace cpp_utils {
   std::vector<std::string_view> splitString(std::string_view const& str, char delimiter) {
     return splitString(str, std::string(1, delimiter));
   }
+
+  std::string_view ltrim(std::string_view sv) {
+    // Trim whitespaces from start of sv
+    auto it =
+        std::find_if(sv.begin(), sv.end(), [](unsigned char ch) { return !std::isspace(ch); });
+    return std::string_view(it, sv.end());
+  }
+
+  std::string_view rtrim(std::string_view sv) {
+    // Trim whitespaces from end of sv
+    auto it =
+        std::find_if(sv.rbegin(), sv.rend(), [](unsigned char ch) { return !std::isspace(ch); });
+    return std::string_view(sv.begin(), it.base());
+  }
+
+  std::string_view trim(std::string_view sv) {
+    // Trim from start and end of sv
+    return rtrim(ltrim(sv));
+  }
+
 }  // namespace cpp_utils
